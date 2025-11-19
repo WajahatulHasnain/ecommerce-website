@@ -7,7 +7,7 @@ const Order = require('../models/Order');
 const Product = require('../models/Product');
 const User = require('../models/User');
 
-async function createTestData() {
+async function createTestData() { // hgjhj,j
   try {
     const uri = process.env.MONGO_URI;
     await mongoose.connect(uri);
