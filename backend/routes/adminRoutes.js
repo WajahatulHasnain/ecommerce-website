@@ -62,7 +62,7 @@ router.get("/products", async (req, res) => {
 
 router.post("/products", upload.single('image'), async (req, res) => {
   try {
-    const { title, description, price, category, stock, tags } = req.body;
+    const { title, description, price, category, stock, tags, discount } = req.body;
     
     const productData = {
       title,
@@ -73,6 +73,20 @@ router.post("/products", upload.single('image'), async (req, res) => {
       createdBy: req.user.id,
       tags: tags ? tags.split(',').map(tag => tag.trim()) : []
     };
+    
+    // Handle discount data
+    if (discount) {
+      const discountData = typeof discount === 'string' ? JSON.parse(discount) : discount;
+      if (discountData && (discountData.type === 'percentage' || discountData.type === 'fixed') && discountData.value > 0) {
+        productData.discount = {
+          type: discountData.type,
+          value: Number(discountData.value),
+          maxDiscount: discountData.maxDiscount ? Number(discountData.maxDiscount) : null,
+          startDate: discountData.startDate || null,
+          endDate: discountData.endDate || null
+        };
+      }
+    }
     
     // Upload image to ImgBB if file was provided
     if (req.file) {
@@ -104,7 +118,7 @@ router.post("/products", upload.single('image'), async (req, res) => {
 
 router.put("/products/:id", upload.single('image'), async (req, res) => {
   try {
-    const { title, description, price, category, stock, tags } = req.body;
+    const { title, description, price, category, stock, tags, discount } = req.body;
     const productId = req.params.id;
     
     const updateData = {
@@ -115,6 +129,26 @@ router.put("/products/:id", upload.single('image'), async (req, res) => {
       stock: Number(stock),
       tags: tags ? tags.split(',').map(tag => tag.trim()) : []
     };
+    
+    // Handle discount data
+    if (discount !== undefined) {
+      if (discount === null || discount === '') {
+        // Remove discount
+        updateData.discount = undefined;
+        updateData.$unset = { discount: 1 };
+      } else {
+        const discountData = typeof discount === 'string' ? JSON.parse(discount) : discount;
+        if (discountData && (discountData.type === 'percentage' || discountData.type === 'fixed') && discountData.value > 0) {
+          updateData.discount = {
+            type: discountData.type,
+            value: Number(discountData.value),
+            maxDiscount: discountData.maxDiscount ? Number(discountData.maxDiscount) : null,
+            startDate: discountData.startDate || null,
+            endDate: discountData.endDate || null
+          };
+        }
+      }
+    }
     
     // Handle image update
     if (req.file) {
@@ -134,11 +168,22 @@ router.put("/products/:id", upload.single('image'), async (req, res) => {
       }
     }
     
-    const product = await Product.findByIdAndUpdate(
-      productId,
-      updateData,
-      { new: true, runValidators: true }
-    ).populate('createdBy', 'name email');
+    let product;
+    if (updateData.$unset) {
+      // Handle unsetting fields separately
+      const { $unset, ...regularUpdate } = updateData;
+      product = await Product.findByIdAndUpdate(
+        productId,
+        { $set: regularUpdate, $unset },
+        { new: true, runValidators: true }
+      ).populate('createdBy', 'name email');
+    } else {
+      product = await Product.findByIdAndUpdate(
+        productId,
+        updateData,
+        { new: true, runValidators: true }
+      ).populate('createdBy', 'name email');
+    }
     
     if (!product) {
       return res.status(404).json({ success: false, msg: "Product not found" });

@@ -81,12 +81,26 @@ router.get("/products", async (req, res) => {
       .skip(skip)
       .limit(Number(limit));
     
+    // Include virtual fields in response
+    const productsWithFinalPrice = products.map(product => {
+      const productObj = product.toObject({ virtuals: true });
+      return {
+        ...productObj,
+        finalPrice: product.finalPrice,
+        discountAmount: product.discountAmount,
+        discountPercentage: product.discountPercentage,
+        isDiscountActive: product.isDiscountActive()
+      };
+    });
+    
     const total = await Product.countDocuments(query);
+    
+    console.log(`📦 Fetched ${products.length} products for customer`);
     
     res.json({ 
       success: true, 
       data: {
-        products,
+        products: productsWithFinalPrice,
         pagination: {
           current: Number(page),
           total: Math.ceil(total / limit),
@@ -121,21 +135,37 @@ router.get("/products/:id", async (req, res) => {
 // Purchase Products
 router.post("/purchase", async (req, res) => {
   try {
+    console.log('🛒 Purchase request received:', { userId: req.user._id, products: req.body.products?.length });
+    
     const { products, customerInfo, coupon, subtotal, discount, finalTotal } = req.body;
     const userId = req.user._id;
     
     if (!products || products.length === 0) {
+      console.log('❌ No products provided');
       return res.status(400).json({ success: false, msg: "No products to purchase" });
+    }
+    
+    // Validate customer info
+    if (!customerInfo?.name || !customerInfo?.email || !customerInfo?.phone || 
+        !customerInfo?.address?.street || !customerInfo?.address?.city) {
+      console.log('❌ Missing customer information');
+      return res.status(400).json({ 
+        success: false, 
+        msg: "Please provide complete customer information" 
+      });
     }
     
     let calculatedTotal = 0;
     const orderProducts = [];
+    
+    console.log('📦 Validating products...');
     
     // Validate products and calculate total
     for (const item of products) {
       const product = await Product.findById(item.productId);
       
       if (!product || !product.isActive) {
+        console.log('❌ Product not found or inactive:', item.productId);
         return res.status(400).json({ 
           success: false, 
           msg: `Product ${item.productId} not found or inactive` 
@@ -143,26 +173,61 @@ router.post("/purchase", async (req, res) => {
       }
       
       if (product.stock < item.qty) {
+        console.log('❌ Insufficient stock:', { product: product.title, requested: item.qty, available: product.stock });
         return res.status(400).json({ 
           success: false, 
-          msg: `Insufficient stock for ${product.title}` 
+          msg: `Insufficient stock for ${product.title}. Available: ${product.stock}, Requested: ${item.qty}` 
         });
       }
       
-      const itemTotal = product.price * item.qty;
+      // Use finalPrice which accounts for discounts
+      const effectivePrice = product.finalPrice;
+      const itemTotal = effectivePrice * item.qty;
       calculatedTotal += itemTotal;
+      
+      console.log('✅ Product validated:', { 
+        title: product.title, 
+        originalPrice: product.price, 
+        finalPrice: effectivePrice, 
+        qty: item.qty, 
+        itemTotal 
+      });
       
       orderProducts.push({
         productId: product._id,
         title: product.title,
         quantity: item.qty,
-        price: product.price,
+        price: effectivePrice, // Use effective price (with discount)
+        originalPrice: product.price, // Store original price for reference
         imageUrl: product.imageUrl
       });
+    }
+    
+    console.log('💰 Calculated subtotal:', calculatedTotal);
+    
+    // Update stock for all products (do this before coupon validation to avoid stock issues)
+    console.log('📦 Updating product stock...');
+    for (let i = 0; i < products.length; i++) {
+      const item = products[i];
+      const product = await Product.findById(item.productId);
       
-      // Reduce stock
-      product.stock -= item.qty;
-      await product.save();
+      // Double-check stock before reducing (in case of concurrent purchases)
+      if (product.stock < item.qty) {
+        console.log('❌ Stock changed during processing:', { product: product.title, available: product.stock, requested: item.qty });
+        return res.status(400).json({ 
+          success: false, 
+          msg: `Stock changed during processing for ${product.title}. Please try again.` 
+        });
+      }
+      
+      // Reduce stock using findByIdAndUpdate to avoid validation issues
+      await Product.findByIdAndUpdate(
+        item.productId,
+        { $inc: { stock: -item.qty } },
+        { runValidators: false }
+      );
+      
+      console.log('✅ Stock updated:', { product: product.title, reducedBy: item.qty, newStock: product.stock - item.qty });
     }
     
     // Validate coupon if provided
@@ -170,6 +235,8 @@ router.post("/purchase", async (req, res) => {
     let couponDetails = null;
     
     if (coupon && coupon.code) {
+      console.log('🏷️ Validating coupon:', coupon.code);
+      
       const Coupon = require("../models/Coupon");
       const validCoupon = await Coupon.findOne({
         code: coupon.code.toUpperCase(),
@@ -181,16 +248,19 @@ router.post("/purchase", async (req, res) => {
       });
       
       if (!validCoupon) {
+        console.log('❌ Invalid coupon:', coupon.code);
         return res.status(400).json({ success: false, msg: "Invalid or expired coupon" });
       }
       
       // Check usage limit
       if (validCoupon.usageLimit && validCoupon.usedCount >= validCoupon.usageLimit) {
+        console.log('❌ Coupon usage limit exceeded:', coupon.code);
         return res.status(400).json({ success: false, msg: "Coupon usage limit exceeded" });
       }
       
       // Check minimum amount
       if (validCoupon.minAmount && calculatedTotal < validCoupon.minAmount) {
+        console.log('❌ Minimum amount not met:', { required: validCoupon.minAmount, actual: calculatedTotal });
         return res.status(400).json({ 
           success: false, 
           msg: `Minimum order amount $${validCoupon.minAmount} required` 
@@ -207,6 +277,8 @@ router.post("/purchase", async (req, res) => {
         appliedDiscount = Math.min(validCoupon.discount, calculatedTotal);
       }
       
+      console.log('✅ Coupon applied:', { code: coupon.code, discount: appliedDiscount });
+      
       // Update coupon usage count
       validCoupon.usedCount += 1;
       await validCoupon.save();
@@ -221,7 +293,11 @@ router.post("/purchase", async (req, res) => {
     
     const totalPrice = Math.max(0, calculatedTotal - appliedDiscount);
     
+    console.log('💳 Order totals:', { subtotal: calculatedTotal, discount: appliedDiscount, finalTotal: totalPrice });
+    
     // Create order
+    console.log('📋 Creating order...');
+    
     const order = new Order({
       userId,
       products: orderProducts,
@@ -229,23 +305,69 @@ router.post("/purchase", async (req, res) => {
       subtotal: calculatedTotal,
       discount: appliedDiscount,
       coupon: couponDetails,
-      customerInfo,
+      customerInfo: {
+        name: customerInfo.name?.trim(),
+        email: customerInfo.email?.trim().toLowerCase(),
+        phone: customerInfo.phone?.trim(),
+        address: {
+          street: customerInfo.address.street?.trim(),
+          city: customerInfo.address.city?.trim(),
+          state: customerInfo.address.state?.trim(),
+          zipCode: customerInfo.address.zipCode?.trim(),
+          country: customerInfo.address.country?.trim() || 'USA'
+        }
+      },
       status: 'pending',
-      paymentStatus: 'completed' // Assuming immediate payment
+      paymentStatus: 'completed', // Assuming immediate payment for now
+      paymentMethod: 'credit_card'
     });
     
     await order.save();
+    console.log('✅ Order created successfully:', order._id);
+    
+    // Populate user data for response
     await order.populate('userId', 'name email');
+    await order.populate('products.productId', 'title imageUrl category');
+    
+    console.log('🎉 Purchase completed successfully');
     
     res.status(201).json({
       success: true,
-      data: order,
-      msg: "Order placed successfully"
+      data: {
+        orderId: order._id,
+        orderNumber: order._id.toString().slice(-8).toUpperCase(),
+        totalPrice: order.totalPrice,
+        products: order.products,
+        customerInfo: order.customerInfo,
+        status: order.status
+      },
+      msg: "Order placed successfully! Thank you for your purchase."
     });
     
   } catch (error) {
-    console.error('Purchase error:', error);
-    res.status(500).json({ success: false, msg: "Failed to process purchase" });
+    console.error('❌ Purchase error:', error);
+    
+    // Provide more specific error messages
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        msg: "Validation Error: " + messages.join(', ')
+      });
+    }
+    
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        msg: "Invalid product ID format"
+      });
+    }
+    
+    res.status(500).json({ 
+      success: false, 
+      msg: "Failed to process purchase. Please try again.",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 

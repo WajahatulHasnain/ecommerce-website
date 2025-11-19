@@ -26,17 +26,17 @@ export default function AdminLayout() {
   if (!user || user.role !== 'admin') return <Navigate to="/login" replace />;
 
   return (
-    <div className="min-h-screen bg-gray-100 flex">
+    <div className="min-h-screen bg-warm-cream flex">
       {/* Sidebar */}
-      <div className={`bg-white shadow-lg transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-16'}`}>
+      <div className={`bg-warm-white shadow-lg border-r border-warm-gray-100 transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-16'}`}>
         <div className="p-4">
           <div className="flex items-center justify-between">
-            <h1 className={`font-bold text-xl text-gray-800 ${!sidebarOpen && 'hidden'}`}>
+            <h1 className={`font-bold text-xl text-warm-gray-800 ${!sidebarOpen && 'hidden'}`}>
               Admin Panel
             </h1>
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 rounded-lg hover:bg-gray-100"
+              className="p-2 rounded-lg hover:bg-warm-gray-50 text-etsy-orange"
             >
               {sidebarOpen ? '←' : '→'}
             </button>
@@ -52,8 +52,8 @@ export default function AdminLayout() {
                 to={item.href}
                 className={`flex items-center px-4 py-3 mx-2 rounded-lg transition-colors ${
                   isActive 
-                    ? 'bg-blue-100 text-blue-700 border-r-4 border-blue-700' 
-                    : 'text-gray-700 hover:bg-gray-100'
+                    ? 'bg-etsy-orange text-white shadow-md' 
+                    : 'text-warm-gray-700 hover:bg-warm-gray-50 hover:text-etsy-orange'
                 }`}
               >
                 <span className="text-2xl mr-3">{item.icon}</span>
@@ -67,23 +67,23 @@ export default function AdminLayout() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Top Bar */}
-        <header className="bg-white shadow-sm border-b px-6 py-4">
+        <header className="bg-warm-white shadow-sm border-b border-warm-gray-100 px-6 py-4">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-2xl font-semibold text-gray-800">
+              <h2 className="text-2xl font-semibold text-warm-gray-800">
                 {navigation.find(nav => nav.href === location.pathname)?.name || 'Admin Panel'}
               </h2>
-              <p className="text-gray-600">Manage your ecommerce platform</p>
+              <p className="text-warm-gray-600">Manage your ecommerce platform</p>
             </div>
             
             <div className="flex items-center space-x-4">
               <div className="text-right">
-                <p className="font-medium text-gray-800">{user?.name}</p>
-                <p className="text-sm text-gray-600">{user?.email}</p>
+                <p className="font-medium text-warm-gray-800">{user?.name}</p>
+                <p className="text-sm text-warm-gray-600">{user?.email}</p>
               </div>
               <button
                 onClick={handleLogout}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+                className="bg-etsy-orange text-white px-4 py-2 rounded-lg hover:bg-etsy-orange-dark transition-colors"
               >
                 Logout
               </button>
@@ -92,7 +92,7 @@ export default function AdminLayout() {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-6 bg-warm-cream">
           <Outlet />
         </main>
       </div>

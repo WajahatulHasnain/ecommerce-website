@@ -18,7 +18,109 @@
   --lavender: #B8A9C9;
 }
 
+/* Custom line-clamp utilities */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+}
+
 /* Base Styling */
+
+/* Custom Etsy-inspired utility classes */
+.bg-etsy-orange {
+  background-color: var(--etsy-orange);
+}
+
+.bg-etsy-orange-light {
+  background-color: var(--etsy-orange-light);
+}
+
+.bg-etsy-orange-dark {
+  background-color: var(--etsy-orange-dark);
+}
+
+.bg-warm-white {
+  background-color: var(--warm-white);
+}
+
+.bg-warm-cream {
+  background-color: var(--warm-cream);
+}
+
+.bg-warm-gray-50 {
+  background-color: var(--warm-gray-50);
+}
+
+.bg-warm-gray-100 {
+  background-color: var(--warm-gray-100);
+}
+
+.bg-sage-green {
+  background-color: var(--sage-green);
+}
+
+.bg-dusty-rose {
+  background-color: var(--dusty-rose);
+}
+
+.bg-warm-blue {
+  background-color: var(--warm-blue);
+}
+
+.bg-lavender {
+  background-color: var(--lavender);
+}
+
+.text-etsy-orange {
+  color: var(--etsy-orange);
+}
+
+.text-etsy-orange-dark {
+  color: var(--etsy-orange-dark);
+}
+
+.text-warm-gray-800 {
+  color: var(--warm-gray-800);
+}
+
+.text-warm-gray-600 {
+  color: #6B7280;
+}
+
+.text-warm-gray-700 {
+  color: #374151;
+}
+
+.border-warm-gray-100 {
+  border-color: var(--warm-gray-100);
+}
+
+.border-etsy-orange {
+  border-color: var(--etsy-orange);
+}
+
+.hover\\:bg-warm-gray-50:hover {
+  background-color: var(--warm-gray-50);
+}
+
+.hover\\:text-etsy-orange:hover {
+  color: var(--etsy-orange);
+}
+
+.hover\\:bg-etsy-orange-dark:hover {
+  background-color: var(--etsy-orange-dark);
+}
 @layer base {
   * {
     @apply border-warm-gray-200;

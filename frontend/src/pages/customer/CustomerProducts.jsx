@@ -13,7 +13,8 @@ export default function CustomerProducts() {
     search: '',
     category: 'all',
     minPrice: '',
-    maxPrice: ''
+    maxPrice: '',
+    discount: 'all'
   });
   const [cart, setCart] = useState([]);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
@@ -32,6 +33,7 @@ export default function CustomerProducts() {
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponError, setCouponError] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
   useEffect(() => {
     fetchProducts();
@@ -43,8 +45,9 @@ export default function CustomerProducts() {
       const token = localStorage.getItem('token');
       const params = new URLSearchParams();
       
+      // Add filters except discount (handle locally)
       Object.keys(filters).forEach(key => {
-        if (filters[key] && filters[key] !== 'all') {
+        if (key !== 'discount' && filters[key] && filters[key] !== 'all') {
           params.append(key, filters[key]);
         }
       });
@@ -54,7 +57,16 @@ export default function CustomerProducts() {
       });
       
       if (response.data.success) {
-        setProducts(response.data.data.products);
+        let filteredProducts = response.data.data.products;
+        
+        // Apply discount filter locally
+        if (filters.discount === 'discount') {
+          filteredProducts = filteredProducts.filter(product => 
+            product.discount?.type && product.discount?.value > 0
+          );
+        }
+        
+        setProducts(filteredProducts);
       }
     } catch (error) {
       console.error('Failed to fetch products:', error);
@@ -86,6 +98,11 @@ export default function CustomerProducts() {
   };
 
   const addToCart = async (product) => {
+    // Use finalPrice if product has active discount, otherwise use original price
+    const effectivePrice = product.discount?.type && product.discount?.value > 0 && product.finalPrice < product.price 
+      ? product.finalPrice 
+      : product.price;
+    
     // First update local cart for immediate purchase flow
     setCart(prev => {
       const existing = prev.find(item => item.productId === product._id);
@@ -99,10 +116,12 @@ export default function CustomerProducts() {
       return [...prev, {
         productId: product._id,
         title: product.title,
-        price: product.price,
+        price: effectivePrice,
+        originalPrice: product.price,
         imageUrl: product.imageUrl,
         qty: 1,
-        maxStock: product.stock
+        maxStock: product.stock,
+        hasDiscount: product.discount?.type && product.discount?.value > 0 && product.finalPrice < product.price
       }];
     });
     
@@ -155,10 +174,30 @@ export default function CustomerProducts() {
       alert('Cart is empty');
       return;
     }
+    
+    // Validate customer info
+    if (!customerInfo.name?.trim() || !customerInfo.email?.trim() || !customerInfo.phone?.trim() || 
+        !customerInfo.address.street?.trim() || !customerInfo.address.city?.trim()) {
+      alert('Please fill in all required customer information (Name, Email, Phone, Street Address, and City)');
+      return;
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(customerInfo.email)) {
+      alert('Please enter a valid email address');
+      return;
+    }
 
     setPurchasing(true);
     try {
       const token = localStorage.getItem('token');
+      
+      if (!token) {
+        alert('Please log in to complete your purchase');
+        setPurchasing(false);
+        return;
+      }
       
       // Calculate subtotal
       const subtotal = cart.reduce((total, item) => total + (item.price * item.qty), 0);
@@ -174,13 +213,18 @@ export default function CustomerProducts() {
             discount = appliedCoupon.maxDiscount;
           }
         } else {
-          discount = appliedCoupon.discount;
+          discount = Math.min(appliedCoupon.discount, subtotal);
         }
         finalTotal = Math.max(0, subtotal - discount);
       }
 
       const response = await api.post('/customer/purchase', {
-        products: cart,
+        products: cart.map(item => ({
+          productId: item.productId,
+          qty: item.qty,
+          title: item.title,
+          price: item.price
+        })),
         customerInfo,
         coupon: appliedCoupon ? {
           code: appliedCoupon.code,
@@ -195,16 +239,25 @@ export default function CustomerProducts() {
       });
 
       if (response.data.success) {
-        alert('Order placed successfully!');
+        alert('🎉 Order placed successfully! Thank you for your purchase.');
         setCart([]);
         setAppliedCoupon(null);
         setCouponCode('');
+        setCustomerInfo({
+          name: '',
+          email: '',
+          phone: '',
+          address: { street: '', city: '', state: '', zipCode: '', country: '' }
+        });
         setShowPurchaseModal(false);
         fetchProducts(); // Refresh products to update stock
+      } else {
+        alert('Order failed: ' + (response.data.msg || 'Unknown error'));
       }
     } catch (error) {
-      console.error('Purchase failed:', error);
-      alert('Purchase failed: ' + (error.response?.data?.msg || error.message));
+      console.error('Purchase error:', error);
+      const errorMessage = error.response?.data?.msg || error.message || 'Purchase failed. Please try again.';
+      alert('❌ Purchase Error: ' + errorMessage);
     } finally {
       setPurchasing(false);
     }
@@ -279,7 +332,21 @@ export default function CustomerProducts() {
   };
 
   const getTotalPrice = () => {
-    return cart.reduce((total, item) => total + (item.price * item.qty), 0);
+    return cart.reduce((total, item) => {
+      // Calculate item total with any product discounts already applied
+      const itemTotal = item.price * item.qty;
+      return total + itemTotal;
+    }, 0);
+  };
+  
+  const getProductDiscountSavings = () => {
+    return cart.reduce((total, item) => {
+      if (item.hasDiscount) {
+        const savings = (item.originalPrice - item.price) * item.qty;
+        return total + savings;
+      }
+      return total;
+    }, 0);
   };
 
   const getDiscountAmount = () => {
@@ -312,7 +379,7 @@ export default function CustomerProducts() {
 
       {/* Filters */}
       <Card className="p-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <Input
             placeholder="Search products..."
             name="search"
@@ -334,6 +401,16 @@ export default function CustomerProducts() {
             <option value="books">Books</option>
             <option value="beauty">Beauty & Personal Care</option>
             <option value="other">Other</option>
+          </select>
+          
+          <select
+            name="discount"
+            value={filters.discount}
+            onChange={handleFilterChange}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+          >
+            <option value="all">All Products</option>
+            <option value="discount">🏷️ On Discount</option>
           </select>
           
           <Input
@@ -396,10 +473,11 @@ export default function CustomerProducts() {
       {loading ? (
         <div className="text-center py-8">Loading products...</div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {products.map(product => (
-            <Card key={product._id} className="overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="aspect-square bg-gray-200 relative">
+            <div key={product._id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+              {/* Product image with overlays */}
+              <div className="relative w-full h-48 bg-gray-100">
                 {product.imageUrl ? (
                   <img
                     src={product.imageUrl}
@@ -408,51 +486,84 @@ export default function CustomerProducts() {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-400">
-                    <span className="text-4xl">📦</span>
+                    <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                    </svg>
                   </div>
                 )}
+                
                 {/* Wishlist Heart Button */}
                 <button
                   onClick={() => toggleWishlist(product._id)}
-                  className={`absolute top-2 right-2 p-2 rounded-full transition-colors ${
+                  className={`absolute top-2 right-2 p-1.5 rounded-full transition-colors ${
                     wishlist.includes(product._id)
                       ? 'bg-red-500 text-white'
                       : 'bg-white text-gray-400 hover:text-red-500'
                   } shadow-md hover:shadow-lg`}
                 >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
                   </svg>
                 </button>
-              </div>
-              
-              <div className="p-4">
-                <h3 className="font-semibold text-gray-900 mb-1">{product.title}</h3>
-                <p className="text-gray-600 text-sm mb-2 line-clamp-2">{product.description}</p>
                 
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-lg font-bold text-green-600">${product.price}</span>
-                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                    {product.category}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-sm text-gray-600">Stock: {product.stock}</span>
-                  {product.tags && product.tags.length > 0 && (
-                    <span className="text-xs text-blue-600">#{product.tags[0]}</span>
+                {/* Discount badge */}
+                {product.discount?.type && product.discount.value > 0 && (
+                  <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-semibold">
+                    {product.discount.type === 'percentage' 
+                      ? `${product.discount.value}% OFF`
+                      : `$${product.discount.value} OFF`
+                    }
+                  </div>
+                )}
+                
+                {/* Price overlay - bottom left */}
+                <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 px-3 py-2 rounded-md">
+                  {product.discount?.type && product.discount?.value > 0 && product.finalPrice < product.price ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="relative">
+                        <span className="text-white text-lg font-bold line-through opacity-75">
+                          ${product.price}
+                        </span>
+                        <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-red-400 font-bold text-xl">×</span>
+                      </div>
+                      <span className="text-white text-xl font-bold">
+                        ${product.finalPrice}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-white text-xl font-bold">${product.price}</span>
                   )}
                 </div>
                 
-                <Button
-                  onClick={() => addToCart(product)}
-                  disabled={product.stock === 0}
-                  className="w-full bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-300"
-                >
-                  {product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
-                </Button>
+                {/* Stock badge - bottom right */}
+                <span className={`absolute bottom-2 right-2 px-3 py-1 text-sm font-bold rounded-md ${
+                  product.stock > 0 ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                }`}>
+                  {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
+                </span>
               </div>
-            </Card>
+              
+              {/* Compact product info below image */}
+              <div className="p-3">
+                <h3 className="font-medium text-gray-900 mb-3 text-sm line-clamp-2 h-10">{product.title}</h3>
+                
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => addToCart(product)}
+                    disabled={product.stock === 0}
+                    className="flex-1 bg-orange-500 text-white hover:bg-orange-600 text-xs py-2 px-2 rounded transition-colors disabled:bg-gray-300"
+                  >
+                    Add to Cart
+                  </button>
+                  <button
+                    onClick={() => setSelectedProduct(product)}
+                    className="flex-1 bg-blue-500 text-white hover:bg-blue-600 text-xs py-2 px-2 rounded transition-colors"
+                  >
+                    View
+                  </button>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       )}
@@ -475,48 +586,72 @@ export default function CustomerProducts() {
               {/* Cart Items */}
               <div className="mb-6">
                 <h3 className="font-semibold mb-2">Order Items</h3>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {cart.map(item => (
-                    <div key={item.productId} className="flex justify-between items-center p-2 border rounded">
-                      <div className="flex items-center space-x-3">
+                    <div key={item.productId} className="flex justify-between items-center p-3 border rounded-lg bg-gray-50">
+                      <div className="flex items-center space-x-4">
                         <img
                           src={item.imageUrl || '/placeholder.png'}
                           alt={item.title}
-                          className="w-10 h-10 object-cover rounded"
+                          className="w-16 h-16 object-cover rounded-lg"
                         />
-                        <span className="font-medium">{item.title}</span>
+                        <div>
+                          <span className="font-medium text-gray-900">{item.title}</span>
+                          <div className="text-sm text-gray-600">Quantity: {item.qty}</div>
+                          {item.hasDiscount && (
+                            <div className="text-xs text-green-600 font-medium flex items-center space-x-1">
+                              <span className="text-red-600">×</span>
+                              <span>Originally ${item.originalPrice} → Save ${(item.originalPrice - item.price).toFixed(2)}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="number"
-                          min="1"
-                          max={item.maxStock}
-                          value={item.qty}
-                          onChange={(e) => updateCartQty(item.productId, parseInt(e.target.value))}
-                          className="w-16 px-2 py-1 border rounded text-center"
-                        />
-                        <span className="font-semibold">${(item.price * item.qty).toFixed(2)}</span>
-                        <button
-                          onClick={() => removeFromCart(item.productId)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          ×
-                        </button>
+                      <div className="text-right">
+                        <div className="bg-gray-800 rounded px-4 py-3">
+                          {item.hasDiscount ? (
+                            <div className="flex items-center space-x-3">
+                              <div className="relative">
+                                <span className="text-white text-lg line-through opacity-75">
+                                  ${(item.originalPrice * item.qty).toFixed(2)}
+                                </span>
+                                <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-red-400 font-bold text-xl">×</span>
+                              </div>
+                              <span className="text-white text-xl font-bold">
+                                ${(item.price * item.qty).toFixed(2)}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="text-white text-xl font-bold">${(item.price * item.qty).toFixed(2)}</div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
-                <div className="text-right mt-4">
-                  <div className="text-lg">
-                    <span className="text-gray-600">Subtotal: ${getTotalPrice().toFixed(2)}</span>
-                  </div>
-                  {appliedCoupon && (
-                    <div className="text-green-600">
-                      Discount ({appliedCoupon.code}): -${getDiscountAmount().toFixed(2)}
+                
+                {/* Order Summary */}
+                <div className="bg-blue-50 p-4 rounded-lg mt-4 border border-blue-200">
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-gray-700 text-lg">
+                      <span>Subtotal:</span>
+                      <span className="font-bold text-xl">${getTotalPrice().toFixed(2)}</span>
                     </div>
-                  )}
-                  <div className="text-xl font-bold border-t pt-2">
-                    Total: ${getFinalTotal().toFixed(2)}
+                    {getProductDiscountSavings() > 0 && (
+                      <div className="flex justify-between text-green-600 text-lg">
+                        <span>Product Discounts:</span>
+                        <span className="font-bold text-xl">-${getProductDiscountSavings().toFixed(2)}</span>
+                      </div>
+                    )}
+                    {appliedCoupon && (
+                      <div className="flex justify-between text-green-600 text-lg">
+                        <span>Coupon Discount ({appliedCoupon.code}):</span>
+                        <span className="font-bold text-xl">-${getDiscountAmount().toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="border-t border-blue-300 pt-3 flex justify-between text-2xl font-bold text-blue-900">
+                      <span>Total:</span>
+                      <span>${getFinalTotal().toFixed(2)}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -637,6 +772,135 @@ export default function CustomerProducts() {
                 >
                   Cancel
                 </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Detailed Product View Modal */}
+      {selectedProduct && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex justify-between items-start mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">{selectedProduct.title}</h2>
+                <button
+                  onClick={() => setSelectedProduct(null)}
+                  className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Product Image */}
+                <div className="relative">
+                  <div className="w-full h-96 bg-gray-100 rounded-lg overflow-hidden">
+                    {selectedProduct.imageUrl ? (
+                      <img
+                        src={selectedProduct.imageUrl}
+                        alt={selectedProduct.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400">
+                        <svg className="w-24 h-24" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Discount Badge on Image */}
+                  {selectedProduct.discount?.type && selectedProduct.discount.value > 0 && (
+                    <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-2 rounded-lg text-sm font-semibold">
+                      {selectedProduct.discount.type === 'percentage' 
+                        ? `${selectedProduct.discount.value}% OFF`
+                        : `$${selectedProduct.discount.value} OFF`
+                      }
+                    </div>
+                  )}
+                </div>
+                
+                {/* Product Details */}
+                <div className="space-y-6">
+                  {/* Price Section */}
+                  <div className="bg-gray-800 rounded-lg p-4">
+                    <h3 className="text-lg font-semibold text-white mb-2">Price</h3>
+                    {selectedProduct.discount?.type && selectedProduct.discount?.value > 0 && selectedProduct.finalPrice < selectedProduct.price ? (
+                      <div className="text-center">
+                        <div className="flex items-center justify-center space-x-4 mb-2">
+                          <div className="relative">
+                            <span className="text-white text-2xl font-bold line-through opacity-75">
+                              ${selectedProduct.price}
+                            </span>
+                            <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-red-400 font-bold text-3xl">×</span>
+                          </div>
+                          <span className="text-white text-5xl font-bold">${selectedProduct.finalPrice}</span>
+                        </div>
+                        <div className="text-green-400 text-lg font-medium">
+                          You save ${(selectedProduct.price - selectedProduct.finalPrice).toFixed(2)}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-white text-5xl font-bold text-center">${selectedProduct.price}</div>
+                    )}
+                  </div>
+                  
+                  {/* Stock Status */}
+                  <div className="flex items-center space-x-2">
+                    <span className="font-medium text-gray-700">Availability:</span>
+                    <span className={`px-4 py-2 rounded-full text-lg font-bold ${
+                      selectedProduct.stock > 0 
+                        ? 'bg-green-500 text-white' 
+                        : 'bg-red-500 text-white'
+                    }`}>
+                      {selectedProduct.stock > 0 ? `In Stock (${selectedProduct.stock} available)` : 'Out of Stock'}
+                    </span>
+                  </div>
+                  
+                  {/* Category */}
+                  <div className="flex items-center space-x-2">
+                    <span className="font-medium text-gray-700">Category:</span>
+                    <span className="bg-gray-100 px-3 py-1 rounded-full text-sm text-gray-700 uppercase">
+                      {selectedProduct.category}
+                    </span>
+                  </div>
+                  
+                  {/* Description */}
+                  <div>
+                    <h3 className="font-medium text-gray-700 mb-2">Description</h3>
+                    <p className="text-gray-600 leading-relaxed">
+                      {selectedProduct.description || 'No description available.'}
+                    </p>
+                  </div>
+                  
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      onClick={() => {
+                        addToCart(selectedProduct);
+                        setSelectedProduct(null);
+                      }}
+                      disabled={selectedProduct.stock === 0}
+                      className="flex-1 bg-orange-500 text-white hover:bg-orange-600 py-3 px-6 rounded-lg transition-colors disabled:bg-gray-300 font-medium"
+                    >
+                      {selectedProduct.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
+                    </button>
+                    <button
+                      onClick={() => toggleWishlist(selectedProduct._id)}
+                      className={`px-6 py-3 rounded-lg transition-colors font-medium ${
+                        wishlist.includes(selectedProduct._id)
+                          ? 'bg-red-500 text-white hover:bg-red-600'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      {wishlist.includes(selectedProduct._id) ? '♥ Remove from Wishlist' : '♡ Add to Wishlist'}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

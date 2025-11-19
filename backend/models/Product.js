@@ -15,6 +15,32 @@ const productSchema = new mongoose.Schema({
     required: [true, "Product price is required"],
     min: [0, "Price cannot be negative"]
   },
+  // Enhanced discount system
+  discount: {
+    type: {
+      type: String,
+      enum: ['percentage', 'fixed'],
+      default: null
+    },
+    value: {
+      type: Number,
+      min: 0,
+      default: 0
+    },
+    maxDiscount: {
+      type: Number,
+      min: 0,
+      default: null
+    },
+    startDate: {
+      type: Date,
+      default: null
+    },
+    endDate: {
+      type: Date,
+      default: null
+    }
+  },
   category: {
     type: String,
     required: [true, "Product category is required"],
@@ -35,6 +61,7 @@ const productSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  // Legacy fields for backward compatibility
   onSale: {
     type: Boolean,
     default: false
@@ -60,6 +87,54 @@ const productSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+// Virtual for getting the final price after discount
+productSchema.virtual('finalPrice').get(function() {
+  if (!this.discount || !this.discount.type || !this.discount.value) {
+    return this.price;
+  }
+  
+  // Check if discount is currently active
+  const now = new Date();
+  if (this.discount.startDate && now < this.discount.startDate) {
+    return this.price;
+  }
+  if (this.discount.endDate && now > this.discount.endDate) {
+    return this.price;
+  }
+  
+  if (this.discount.type === 'percentage') {
+    const discountAmount = (this.price * this.discount.value) / 100;
+    const maxDiscount = this.discount.maxDiscount || discountAmount;
+    const actualDiscount = Math.min(discountAmount, maxDiscount);
+    return Math.max(0, this.price - actualDiscount);
+  } else {
+    // Fixed amount discount
+    return Math.max(0, this.price - this.discount.value);
+  }
+});
+
+// Virtual for getting the discount amount
+productSchema.virtual('discountAmount').get(function() {
+  return this.price - this.finalPrice;
+});
+
+// Virtual for getting the discount percentage (for display)
+productSchema.virtual('discountPercentage').get(function() {
+  if (this.price === 0) return 0;
+  return Math.round((this.discountAmount / this.price) * 100);
+});
+
+// Method to check if discount is currently active
+productSchema.methods.isDiscountActive = function() {
+  if (!this.discount || !this.discount.type || !this.discount.value) return false;
+  
+  const now = new Date();
+  if (this.discount.startDate && now < this.discount.startDate) return false;
+  if (this.discount.endDate && now > this.discount.endDate) return false;
+  
+  return true;
+};
 
 // Index for better performance
 productSchema.index({ category: 1 });

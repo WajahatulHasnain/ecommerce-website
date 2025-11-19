@@ -10,6 +10,20 @@ export default function CustomerCart() {
   const [couponCode, setCouponCode] = useState('');
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponData, setCouponData] = useState(null);
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [customerInfo, setCustomerInfo] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: {
+      street: '',
+      city: '',
+      state: '',
+      zipCode: '',
+      country: ''
+    }
+  });
+  const [processing, setProcessing] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -120,13 +134,24 @@ export default function CustomerCart() {
 
   const calculateSubtotal = () => {
     return cartItems.reduce((total, item) => 
-      total + (item.productId.price * item.quantity), 0
+      total + ((item.productId.finalPrice || item.productId.price) * item.quantity), 0
     );
   };
 
-  const handleCheckout = async () => {
+  const handleCheckout = () => {
     if (cartItems.length === 0) {
       alert('Your cart is empty');
+      return;
+    }
+    setShowCheckoutModal(true);
+  };
+
+  const handlePurchase = async () => {
+    // Validate customer info
+    if (!customerInfo.name || !customerInfo.email || !customerInfo.phone || 
+        !customerInfo.address.street || !customerInfo.address.city || 
+        !customerInfo.address.state) {
+      alert('Please fill in all required customer information');
       return;
     }
 
@@ -136,20 +161,21 @@ export default function CustomerCart() {
     const purchaseData = {
       products: cartItems.map(item => ({
         productId: item.productId._id,
-        qty: item.quantity
+        qty: item.quantity,
+        title: item.productId.title,
+        price: item.productId.finalPrice || item.productId.price
       })),
-      customerInfo: {
-        // You can add customer info collection here
-      },
+      customerInfo,
       coupon: couponData ? {
         code: couponData.code,
         discount: couponDiscount
       } : null,
       subtotal,
       discount: couponDiscount,
-      finalTotal
+      totalPrice: finalTotal
     };
 
+    setProcessing(true);
     try {
       const token = localStorage.getItem('token');
       const response = await api.post('/customer/purchase', purchaseData, {
@@ -163,11 +189,14 @@ export default function CustomerCart() {
         });
         
         alert('Order placed successfully!');
+        setShowCheckoutModal(false);
         navigate('/customer/orders');
       }
     } catch (error) {
       console.error('Checkout failed:', error);
       alert(error.response?.data?.msg || 'Checkout failed. Please try again.');
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -215,7 +244,21 @@ export default function CustomerCart() {
                   <div className="flex-1">
                     <h3 className="font-semibold text-gray-900">{item.productId.title}</h3>
                     <p className="text-sm text-gray-600 mb-1">{item.productId.category}</p>
-                    <p className="text-green-600 font-bold">${item.productId.price}</p>
+                    <div className="flex items-center space-x-2">
+                      {item.productId.discount?.enabled && item.productId.finalPrice < item.productId.price ? (
+                        <>
+                          <p className="text-green-600 font-bold">${item.productId.finalPrice}</p>
+                          <p className="text-sm text-gray-400 line-through">${item.productId.price}</p>
+                          <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">
+                            {item.productId.discount.type === 'percentage' 
+                              ? `${item.productId.discount.value}% OFF` 
+                              : `$${item.productId.discount.value} OFF`}
+                          </span>
+                        </>
+                      ) : (
+                        <p className="text-green-600 font-bold">${item.productId.price}</p>
+                      )}
+                    </div>
                     <p className="text-xs text-gray-500">{item.productId.stock} in stock</p>
                   </div>
                   
@@ -237,7 +280,7 @@ export default function CustomerCart() {
                   </div>
                   
                   <div className="text-right">
-                    <p className="font-semibold">${(item.productId.price * item.quantity).toFixed(2)}</p>
+                    <p className="font-semibold">${((item.productId.finalPrice || item.productId.price) * item.quantity).toFixed(2)}</p>
                     <Button
                       onClick={() => removeItem(item.productId._id)}
                       className="text-red-600 text-sm hover:text-red-800 mt-1"
@@ -328,6 +371,202 @@ export default function CustomerCart() {
             Continue Shopping
           </Button>
         </Card>
+      )}
+      
+      {/* Checkout Modal */}
+      {showCheckoutModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <h2 className="text-xl font-bold mb-4">Complete Your Order</h2>
+              
+              {/* Order Summary */}
+              <div className="mb-6">
+                <h3 className="font-semibold mb-3">Order Summary</h3>
+                <div className="space-y-2">
+                  {cartItems.map(item => (
+                    <div key={item._id} className="flex justify-between items-center p-2 border rounded">
+                      <div className="flex items-center space-x-3">
+                        <img
+                          src={item.productId.imageUrl || '/placeholder.png'}
+                          alt={item.productId.title}
+                          className="w-10 h-10 object-cover rounded"
+                        />
+                        <div>
+                          <span className="font-medium">{item.productId.title}</span>
+                          <div className="text-sm text-gray-600">Qty: {item.quantity}</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        {item.productId.discount?.enabled && item.productId.finalPrice < item.productId.price ? (
+                          <div>
+                            <div className="text-green-600 font-semibold">${((item.productId.finalPrice || item.productId.price) * item.quantity).toFixed(2)}</div>
+                            <div className="text-xs text-gray-400 line-through">${(item.productId.price * item.quantity).toFixed(2)}</div>
+                          </div>
+                        ) : (
+                          <div className="font-semibold">${((item.productId.finalPrice || item.productId.price) * item.quantity).toFixed(2)}</div>
+                        )}
+                      </div>
+                    </div>
+                  ))}\n                </div>
+                
+                <div className="mt-4 p-4 bg-gray-50 rounded">
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold">Subtotal:</span>
+                    <span className="font-semibold">${calculateSubtotal().toFixed(2)}</span>
+                  </div>
+                  {couponDiscount > 0 && (
+                    <div className="flex justify-between items-center text-green-600">
+                      <span>Coupon Discount:</span>
+                      <span>-${couponDiscount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center text-lg font-bold border-t pt-2 mt-2">
+                    <span>Total:</span>
+                    <span>${(Math.max(0, calculateSubtotal() - couponDiscount)).toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Customer Information Form */}
+              <div className="space-y-4">
+                <h3 className="font-semibold">Customer Information</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                    <input
+                      type="text"
+                      value={customerInfo.name}
+                      onChange={(e) => setCustomerInfo(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter your full name"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                    <input
+                      type="email"
+                      value={customerInfo.email}
+                      onChange={(e) => setCustomerInfo(prev => ({ ...prev, email: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter your email"
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
+                  <input
+                    type="tel"
+                    value={customerInfo.phone}
+                    onChange={(e) => setCustomerInfo(prev => ({ ...prev, phone: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter your phone number"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Street Address *</label>
+                  <input
+                    type="text"
+                    value={customerInfo.address.street}
+                    onChange={(e) => setCustomerInfo(prev => ({
+                      ...prev,
+                      address: { ...prev.address, street: e.target.value }
+                    }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter your street address"
+                    required
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">City *</label>
+                    <input
+                      type="text"
+                      value={customerInfo.address.city}
+                      onChange={(e) => setCustomerInfo(prev => ({
+                        ...prev,
+                        address: { ...prev.address, city: e.target.value }
+                      }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="City"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">State *</label>
+                    <input
+                      type="text"
+                      value={customerInfo.address.state}
+                      onChange={(e) => setCustomerInfo(prev => ({
+                        ...prev,
+                        address: { ...prev.address, state: e.target.value }
+                      }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="State"
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">ZIP Code</label>
+                    <input
+                      type="text"
+                      value={customerInfo.address.zipCode}
+                      onChange={(e) => setCustomerInfo(prev => ({
+                        ...prev,
+                        address: { ...prev.address, zipCode: e.target.value }
+                      }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="ZIP Code"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                    <input
+                      type="text"
+                      value={customerInfo.address.country}
+                      onChange={(e) => setCustomerInfo(prev => ({
+                        ...prev,
+                        address: { ...prev.address, country: e.target.value }
+                      }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Country"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 mt-6">
+                <Button
+                  onClick={handlePurchase}
+                  disabled={processing}
+                  className="flex-1 bg-green-600 text-white hover:bg-green-700 py-3"
+                >
+                  {processing ? 'Processing...' : `Place Order - $${(Math.max(0, calculateSubtotal() - couponDiscount)).toFixed(2)}`}
+                </Button>
+                <Button
+                  onClick={() => setShowCheckoutModal(false)}
+                  className="flex-1 bg-gray-300 text-gray-700 hover:bg-gray-400 py-3"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

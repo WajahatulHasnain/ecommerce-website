@@ -30,7 +30,7 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-etsy-orange"></div>
       </div>
     );
   }
@@ -40,34 +40,34 @@ export default function AdminDashboard() {
       title: 'Total Users',
       value: dashboardData?.totalUsers || 0,
       icon: '👥',
-      color: 'bg-blue-500'
+      color: 'bg-warm-blue'
     },
     {
       title: 'Total Products',
       value: dashboardData?.totalProducts || 0,
       icon: '📦',
-      color: 'bg-green-500'
+      color: 'bg-sage-green'
     },
     {
       title: 'Total Orders',
       value: dashboardData?.totalOrders || 0,
       icon: '🛍️',
-      color: 'bg-purple-500'
+      color: 'bg-lavender'
     },
     {
       title: 'Revenue',
       value: `$${dashboardData?.revenue?.toLocaleString() || '0'}`,
       icon: '💰',
-      color: 'bg-yellow-500'
+      color: 'bg-etsy-orange'
     }
   ];
 
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg p-6">
+      <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg p-6">
         <h1 className="text-3xl font-bold mb-2">Welcome to Admin Dashboard</h1>
-        <p className="text-blue-100">Manage your ecommerce platform efficiently</p>
+        <p className="text-orange-100">Manage your ecommerce platform efficiently</p>
       </div>
 
       {/* Stats Grid */}
@@ -107,13 +107,13 @@ export default function AdminDashboard() {
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
           <div className="space-y-3">
-            <button className="w-full text-left p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+            <button className="w-full text-left p-3 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors">
               <span className="font-medium">📦 Add New Product</span>
             </button>
-            <button className="w-full text-left p-3 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+            <button className="w-full text-left p-3 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors">
               <span className="font-medium">🎫 Create Coupon</span>
             </button>
-            <button className="w-full text-left p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
+            <button className="w-full text-left p-3 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition-colors">
               <span className="font-medium">📊 View Analytics</span>
             </button>
           </div>
