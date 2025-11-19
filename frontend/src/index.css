@@ -1,0 +1,256 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Etsy-inspired CSS Variables */
+:root {
+  --etsy-orange: #F16623;
+  --etsy-orange-light: #FF8C42;
+  --etsy-orange-dark: #D14E1A;
+  --warm-white: #FDFCFB;
+  --warm-cream: #F7F5F3;
+  --warm-gray-50: #F5F4F2;
+  --warm-gray-100: #E8E6E3;
+  --warm-gray-800: #3C3A35;
+  --sage-green: #9CAF88;
+  --dusty-rose: #D4A5A5;
+  --warm-blue: #7BA7BC;
+  --lavender: #B8A9C9;
+}
+
+/* Base Styling */
+@layer base {
+  * {
+    @apply border-warm-gray-200;
+  }
+  
+  body {
+    @apply bg-warm-white text-warm-gray-800 font-sans;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-warm-gray-900 font-semibold;
+  }
+  
+  h1 { @apply text-3xl lg:text-4xl; }
+  h2 { @apply text-2xl lg:text-3xl; }
+  h3 { @apply text-xl lg:text-2xl; }
+  h4 { @apply text-lg lg:text-xl; }
+}
+
+/* Component System */
+@layer components {
+  /* Button Components */
+  .btn-primary {
+    @apply bg-etsy-orange hover:bg-etsy-orange-dark text-white font-medium px-6 py-3 rounded-xl 
+           transition-all duration-200 shadow-soft hover:shadow-medium transform hover:-translate-y-0.5
+           focus:outline-none focus:ring-4 focus:ring-etsy-orange focus:ring-opacity-30;
+  }
+  
+  .btn-secondary {
+    @apply bg-warm-gray-100 hover:bg-warm-gray-200 text-warm-gray-700 hover:text-warm-gray-800 
+           font-medium px-6 py-3 rounded-xl transition-all duration-200 shadow-soft hover:shadow-medium
+           transform hover:-translate-y-0.5 focus:outline-none focus:ring-4 focus:ring-warm-gray-300;
+  }
+  
+  .btn-outline {
+    @apply border-2 border-etsy-orange text-etsy-orange hover:bg-etsy-orange hover:text-white
+           font-medium px-6 py-3 rounded-xl transition-all duration-200 
+           focus:outline-none focus:ring-4 focus:ring-etsy-orange focus:ring-opacity-30;
+  }
+  
+  .btn-ghost {
+    @apply text-warm-gray-600 hover:text-etsy-orange hover:bg-warm-gray-50 font-medium px-4 py-2 
+           rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-etsy-orange focus:ring-opacity-30;
+  }
+
+  /* Card Components */
+  .card-primary {
+    @apply bg-white rounded-2xl shadow-soft hover:shadow-medium transition-all duration-300
+           border border-warm-gray-100 overflow-hidden;
+  }
+  
+  .card-elevated {
+    @apply bg-white rounded-2xl shadow-medium hover:shadow-large transition-all duration-300
+           border border-warm-gray-100 overflow-hidden transform hover:-translate-y-1;
+  }
+  
+  .card-soft {
+    @apply bg-warm-gray-50 rounded-xl shadow-soft border border-warm-gray-100 overflow-hidden;
+  }
+
+  /* Input Components */
+  .input-primary {
+    @apply w-full px-4 py-3 bg-white border-2 border-warm-gray-200 rounded-xl 
+           focus:border-etsy-orange focus:ring-4 focus:ring-etsy-orange focus:ring-opacity-20
+           transition-all duration-200 placeholder-warm-gray-400 text-warm-gray-800
+           focus:outline-none;
+  }
+  
+  .input-search {
+    @apply w-full px-6 py-4 bg-white border-2 border-warm-gray-200 rounded-2xl 
+           focus:border-etsy-orange focus:ring-4 focus:ring-etsy-orange focus:ring-opacity-20
+           transition-all duration-200 placeholder-warm-gray-400 text-warm-gray-800
+           focus:outline-none shadow-soft hover:shadow-medium;
+  }
+
+  /* Product Card Component */
+  .product-card {
+    @apply bg-white rounded-2xl shadow-soft hover:shadow-large transition-all duration-300
+           border border-warm-gray-100 overflow-hidden group cursor-pointer
+           transform hover:-translate-y-2;
+  }
+  
+  .product-card-image {
+    @apply aspect-square bg-warm-gray-50 overflow-hidden relative;
+  }
+  
+  .product-card-image img {
+    @apply w-full h-full object-cover transition-transform duration-300 group-hover:scale-105;
+  }
+  
+  .product-card-content {
+    @apply p-5;
+  }
+  
+  .product-card-title {
+    @apply font-semibold text-warm-gray-900 mb-2 text-lg leading-tight;
+  }
+  
+  .product-card-price {
+    @apply font-bold text-etsy-orange text-xl;
+  }
+
+  /* Navigation Components */
+  .nav-primary {
+    @apply bg-white shadow-soft border-b border-warm-gray-100;
+  }
+  
+  .nav-link {
+    @apply text-warm-gray-600 hover:text-etsy-orange font-medium transition-colors duration-200
+           px-4 py-2 rounded-lg hover:bg-warm-gray-50;
+  }
+  
+  .nav-link-active {
+    @apply text-etsy-orange bg-warm-cream font-semibold px-4 py-2 rounded-lg;
+  }
+
+  /* Dashboard Components */
+  .dashboard-card {
+    @apply bg-gradient-to-br from-white to-warm-gray-50 rounded-2xl shadow-soft hover:shadow-medium 
+           transition-all duration-300 border border-warm-gray-100 overflow-hidden p-6;
+  }
+  
+  .stat-card {
+    @apply bg-white rounded-xl shadow-soft border border-warm-gray-100 p-6 
+           hover:shadow-medium transition-all duration-300 hover:border-etsy-orange-light;
+  }
+
+  /* Admin Components */
+  .admin-card {
+    @apply bg-white rounded-xl shadow-soft border border-warm-gray-100 overflow-hidden;
+  }
+  
+  .admin-header {
+    @apply bg-gradient-to-r from-lavender to-warm-blue text-white px-6 py-4;
+  }
+  
+  .admin-content {
+    @apply p-6;
+  }
+
+  /* Table Components */
+  .table-modern {
+    @apply w-full bg-white rounded-xl shadow-soft overflow-hidden border border-warm-gray-100;
+  }
+  
+  .table-modern th {
+    @apply bg-warm-gray-50 text-warm-gray-700 font-semibold text-left px-6 py-4 border-b border-warm-gray-200;
+  }
+  
+  .table-modern td {
+    @apply px-6 py-4 border-b border-warm-gray-100 text-warm-gray-800;
+  }
+  
+  .table-modern tbody tr:hover {
+    @apply bg-warm-gray-50;
+  }
+
+  /* Modal Components */
+  .modal-overlay {
+    @apply fixed inset-0 bg-warm-gray-900 bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4;
+  }
+  
+  .modal-content {
+    @apply bg-white rounded-2xl shadow-large max-w-2xl w-full max-h-[90vh] overflow-hidden animate-scale-in;
+  }
+  
+  .modal-header {
+    @apply px-6 py-4 border-b border-warm-gray-200;
+  }
+  
+  .modal-body {
+    @apply px-6 py-4 max-h-[60vh] overflow-y-auto;
+  }
+  
+  .modal-footer {
+    @apply px-6 py-4 border-t border-warm-gray-200 bg-warm-gray-50;
+  }
+
+  /* Utility Components */
+  .section-padding {
+    @apply py-16 lg:py-24;
+  }
+  
+  .container-custom {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .text-gradient {
+    @apply bg-gradient-to-r from-etsy-orange to-etsy-orange-dark bg-clip-text text-transparent;
+  }
+  
+  .divider {
+    @apply border-t border-warm-gray-200 my-8;
+  }
+
+  /* Animation Classes */
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out forwards;
+  }
+  
+  .animate-stagger {
+    animation-delay: calc(var(--stagger) * 0.1s);
+  }
+}
+
+/* Custom Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  @apply w-2;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-warm-gray-100 rounded-full;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-warm-gray-300 rounded-full hover:bg-warm-gray-400;
+}
+
+/* Focus Visible for Better Accessibility */
+.focus-visible:focus {
+  @apply outline-none ring-4 ring-etsy-orange ring-opacity-30;
+}
