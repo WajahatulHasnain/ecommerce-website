@@ -223,77 +223,105 @@ export default function CustomerCart() {
       {cartItems.length > 0 ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Cart Items */}
-          <div className="lg:col-span-2 space-y-4">
-            {cartItems.map((item) => (
-              <Card key={item._id} className="p-4">
-                <div className="flex items-center space-x-4">
-                  <div className="w-20 h-20 bg-gray-200 rounded-lg overflow-hidden">
-                    {item.productId.imageUrl ? (
+          <div className="lg:col-span-2 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {cartItems.map((item) => (
+                <div key={item._id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 group">
+                  {/* Full-height product image with gradient overlay */}
+                  <div className="relative w-full h-80 bg-gray-100 overflow-hidden">
+                  {item.productId.imageUrl ? (
+                    <>
                       <img
                         src={item.productId.imageUrl}
                         alt={item.productId.title}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400">
-                        <span className="text-2xl">📦</span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900">{item.productId.title}</h3>
-                    <p className="text-sm text-gray-600 mb-1">{item.productId.category}</p>
-                    <div className="flex items-center space-x-2">
-                      {item.productId.discount?.enabled && item.productId.finalPrice < item.productId.price ? (
-                        <>
-                          <p className="text-green-600 font-bold">${item.productId.finalPrice}</p>
-                          <p className="text-sm text-gray-400 line-through">${item.productId.price}</p>
-                          <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">
-                            {item.productId.discount.type === 'percentage' 
-                              ? `${item.productId.discount.value}% OFF` 
-                              : `$${item.productId.discount.value} OFF`}
-                          </span>
-                        </>
-                      ) : (
-                        <p className="text-green-600 font-bold">${item.productId.price}</p>
-                      )}
+                      {/* Dark gradient overlay for better text readability */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+                    </>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-200">
+                      <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                      </svg>
                     </div>
-                    <p className="text-xs text-gray-500">{item.productId.stock} in stock</p>
-                  </div>
+                  )}
                   
-                  <div className="flex items-center space-x-2">
-                    <Button
+                  {/* Remove Button - Top Right - Always Visible */}
+                  <button
+                    onClick={() => removeItem(item.productId._id)}
+                    className="absolute top-3 right-3 p-2 rounded-full backdrop-blur-md bg-red-500/90 text-white hover:bg-red-600 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-110 z-20"
+                  >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                  
+                  {/* Quantity Controls - Top Left - Always Visible */}
+                  <div className="absolute top-3 left-3 flex items-center space-x-2 backdrop-blur-md bg-white/90 rounded-full px-3 py-2 shadow-lg z-20">
+                    <button
                       onClick={() => updateQuantity(item.productId._id, item.quantity - 1)}
-                      className="w-8 h-8 bg-gray-200 text-gray-700 text-sm hover:bg-gray-300"
+                      className="w-6 h-6 bg-gray-200 text-gray-700 text-sm hover:bg-gray-300 rounded-full flex items-center justify-center font-bold"
                     >
                       -
-                    </Button>
-                    <span className="w-12 text-center font-medium">{item.quantity}</span>
-                    <Button
+                    </button>
+                    <span className="w-8 text-center font-bold text-gray-800">{item.quantity}</span>
+                    <button
                       onClick={() => updateQuantity(item.productId._id, item.quantity + 1)}
-                      className="w-8 h-8 bg-gray-200 text-gray-700 text-sm hover:bg-gray-300"
+                      className="w-6 h-6 bg-gray-200 text-gray-700 text-sm hover:bg-gray-300 rounded-full flex items-center justify-center font-bold"
                       disabled={item.quantity >= item.productId.stock}
                     >
                       +
-                    </Button>
+                    </button>
                   </div>
                   
-                  <div className="text-right">
-                    <p className="font-semibold">${((item.productId.finalPrice || item.productId.price) * item.quantity).toFixed(2)}</p>
-                    <Button
-                      onClick={() => removeItem(item.productId._id)}
-                      className="text-red-600 text-sm hover:text-red-800 mt-1"
-                    >
-                      Remove
-                    </Button>
+                  {/* Discount badge */}
+                  {item.productId.discount?.enabled && item.productId.finalPrice < item.productId.price && (
+                    <div className="absolute top-3 right-16 bg-red-500 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow-lg backdrop-blur-sm">
+                      {item.productId.discount.type === 'percentage' 
+                        ? `${item.productId.discount.value}% OFF`
+                        : `$${item.productId.discount.value} OFF`
+                      }
+                    </div>
+                  )}
+                  
+                  {/* Product Title - Bottom with transparency */}
+                  <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+                    <h3 className="font-semibold text-white text-base mb-3 line-clamp-2 drop-shadow-lg">
+                      {item.productId.title}
+                    </h3>
+                    
+                    {/* Price and Stock Row */}
+                    <div className="flex items-end justify-between">
+                      {/* Price Display */}
+                      <div className="flex items-center gap-2">
+                        {item.productId.discount?.enabled && item.productId.finalPrice < item.productId.price ? (
+                          <>
+                            <span className="text-gray-300 text-sm line-through">
+                              ${(item.productId.price * item.quantity).toFixed(2)}
+                            </span>
+                            <span className="text-white text-2xl font-bold drop-shadow-lg">
+                              ${(item.productId.finalPrice * item.quantity).toFixed(2)}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-white text-2xl font-bold drop-shadow-lg">
+                            ${(item.productId.price * item.quantity).toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+                      
+                      {/* Stock Badge */}
+                      <span className="px-3 py-1 text-xs font-bold rounded-full backdrop-blur-md bg-green-500/90 text-white shadow-lg">
+                        {item.productId.stock} in stock
+                      </span>
+                    </div>
+                  </div>
                   </div>
                 </div>
-              </Card>
-            ))}
-          </div>
-
-          {/* Order Summary */}
+              ))}
+            </div>
+          </div>          {/* Order Summary */}
           <div className="space-y-4">
             {/* Coupon Section */}
             <Card className="p-4">

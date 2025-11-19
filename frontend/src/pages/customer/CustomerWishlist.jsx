@@ -85,56 +85,98 @@ export default function CustomerWishlist() {
       </div>
 
       {wishlistItems.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {wishlistItems.map((item) => (
-            <Card key={item._id} className="overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="aspect-square bg-gray-200">
+            <div key={item._id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 group">
+              {/* Full-height product image with gradient overlay */}
+              <div className="relative w-full h-80 bg-gray-100 overflow-hidden">
                 {item.productId.imageUrl ? (
-                  <img
-                    src={item.productId.imageUrl}
-                    alt={item.productId.title}
-                    className="w-full h-full object-cover"
-                  />
+                  <>
+                    <img
+                      src={item.productId.imageUrl}
+                      alt={item.productId.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    {/* Dark gradient overlay for better text readability */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+                  </>
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400">
-                    <span className="text-4xl">📦</span>
+                  <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-200">
+                    <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                    </svg>
                   </div>
                 )}
-              </div>
-              
-              <div className="p-4">
-                <h3 className="font-semibold text-gray-900 mb-1">{item.productId.title}</h3>
-                <p className="text-gray-500 text-sm mb-2 line-clamp-2">{item.productId.description}</p>
-                <p className="text-xs text-gray-400 mb-2">{item.productId.category}</p>
                 
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-xl font-bold text-green-600">${item.productId.price}</span>
-                  <span className={`text-sm px-2 py-1 rounded-full ${
-                    item.productId.stock > 0 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {item.productId.stock > 0 ? `${item.productId.stock} in stock` : 'Out of Stock'}
-                  </span>
+                {/* Remove from Wishlist Button - Top Right - Always Visible */}
+                <button
+                  onClick={() => removeFromWishlist(item.productId._id)}
+                  className="absolute top-3 right-3 p-2 rounded-full backdrop-blur-md bg-red-500/90 text-white hover:bg-red-600 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-110 z-20"
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+                
+                {/* Discount badge - Top Left */}
+                {item.productId.discount?.type && item.productId.discount.value > 0 && (
+                  <div className="absolute top-3 left-3 bg-red-500 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow-lg backdrop-blur-sm">
+                    {item.productId.discount.type === 'percentage' 
+                      ? `${item.productId.discount.value}% OFF`
+                      : `$${item.productId.discount.value} OFF`
+                    }
+                  </div>
+                )}
+                
+                {/* Product Title - Bottom with transparency */}
+                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+                  <h3 className="font-semibold text-white text-base mb-3 line-clamp-2 drop-shadow-lg">
+                    {item.productId.title}
+                  </h3>
+                  
+                  {/* Price and Stock Row */}
+                  <div className="flex items-end justify-between">
+                    {/* Price Display */}
+                    <div className="flex items-center gap-2">
+                      {item.productId.discount?.type && item.productId.discount?.value > 0 && item.productId.finalPrice < item.productId.price ? (
+                        <>
+                          <span className="text-gray-300 text-sm line-through">
+                            ${item.productId.price}
+                          </span>
+                          <span className="text-white text-2xl font-bold drop-shadow-lg">
+                            ${item.productId.finalPrice}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-white text-2xl font-bold drop-shadow-lg">
+                          ${item.productId.price}
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Stock Badge */}
+                    <span className={`px-3 py-1 text-xs font-bold rounded-full backdrop-blur-md ${
+                      item.productId.stock > 0 
+                        ? 'bg-green-500/90 text-white' 
+                        : 'bg-red-500/90 text-white'
+                    } shadow-lg`}>
+                      {item.productId.stock > 0 ? 'In Stock' : 'Out of Stock'}
+                    </span>
+                  </div>
                 </div>
                 
-                <div className="flex gap-2">
-                  <Button
+                {/* Add to Cart Button - Appears on hover - Lower z-index */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/40 backdrop-blur-sm z-10">
+                  <button
                     onClick={() => addToCart(item)}
-                    className="flex-1 bg-blue-600 text-white text-sm py-2 hover:bg-blue-700"
                     disabled={item.productId.stock === 0}
+                    className="bg-orange-500 text-white hover:bg-orange-600 text-sm py-3 px-8 rounded-lg font-semibold transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:scale-105 disabled:hover:scale-100"
                   >
                     {item.productId.stock > 0 ? 'Add to Cart' : 'Out of Stock'}
-                  </Button>
-                  <Button
-                    onClick={() => removeFromWishlist(item.productId._id)}
-                    className="bg-red-100 text-red-600 hover:bg-red-200 text-sm py-2 px-3"
-                  >
-                    🗑️
-                  </Button>
+                  </button>
                 </div>
               </div>
-            </Card>
+            </div>
           ))}
         </div>
       ) : (

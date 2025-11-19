@@ -473,42 +473,46 @@ export default function CustomerProducts() {
       {loading ? (
         <div className="text-center py-8">Loading products...</div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {products.map(product => (
-            <div key={product._id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-              {/* Product image with overlays */}
-              <div className="relative w-full h-48 bg-gray-100">
+            <div key={product._id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 group">
+              {/* Full-height product image with gradient overlay */}
+              <div className="relative w-full h-80 bg-gray-100 overflow-hidden">
                 {product.imageUrl ? (
-                  <img
-                    src={product.imageUrl}
-                    alt={product.title}
-                    className="w-full h-full object-cover"
-                  />
+                  <>
+                    <img
+                      src={product.imageUrl}
+                      alt={product.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    {/* Dark gradient overlay for better text readability */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+                  </>
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400">
-                    <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 20 20">
+                  <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-200">
+                    <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
                     </svg>
                   </div>
                 )}
                 
-                {/* Wishlist Heart Button */}
+                {/* Wishlist Heart Button - Top Right */}
                 <button
                   onClick={() => toggleWishlist(product._id)}
-                  className={`absolute top-2 right-2 p-1.5 rounded-full transition-colors ${
+                  className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-md transition-all duration-200 ${
                     wishlist.includes(product._id)
-                      ? 'bg-red-500 text-white'
-                      : 'bg-white text-gray-400 hover:text-red-500'
-                  } shadow-md hover:shadow-lg`}
+                      ? 'bg-red-500/90 text-white scale-110'
+                      : 'bg-white/80 text-gray-600 hover:text-red-500 hover:bg-white/95'
+                  } shadow-lg hover:shadow-xl hover:scale-110`}
                 >
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
                   </svg>
                 </button>
                 
-                {/* Discount badge */}
+                {/* Discount badge - Top Left */}
                 {product.discount?.type && product.discount.value > 0 && (
-                  <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-semibold">
+                  <div className="absolute top-3 left-3 bg-red-500 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow-lg backdrop-blur-sm">
                     {product.discount.type === 'percentage' 
                       ? `${product.discount.value}% OFF`
                       : `$${product.discount.value} OFF`
@@ -516,50 +520,57 @@ export default function CustomerProducts() {
                   </div>
                 )}
                 
-                {/* Price overlay - bottom left */}
-                <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 px-3 py-2 rounded-md">
-                  {product.discount?.type && product.discount?.value > 0 && product.finalPrice < product.price ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="relative">
-                        <span className="text-white text-lg font-bold line-through opacity-75">
+                {/* Product Title - Bottom with transparency */}
+                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+                  <h3 className="font-semibold text-white text-base mb-3 line-clamp-2 drop-shadow-lg">
+                    {product.title}
+                  </h3>
+                  
+                  {/* Price and Stock Row */}
+                  <div className="flex items-end justify-between">
+                    {/* Price Display */}
+                    <div className="flex items-center gap-2">
+                      {product.discount?.type && product.discount?.value > 0 && product.finalPrice < product.price ? (
+                        <>
+                          <span className="text-gray-300 text-sm line-through">
+                            ${product.price}
+                          </span>
+                          <span className="text-white text-2xl font-bold drop-shadow-lg">
+                            ${product.finalPrice}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-white text-2xl font-bold drop-shadow-lg">
                           ${product.price}
                         </span>
-                        <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-red-400 font-bold text-xl">×</span>
-                      </div>
-                      <span className="text-white text-xl font-bold">
-                        ${product.finalPrice}
-                      </span>
+                      )}
                     </div>
-                  ) : (
-                    <span className="text-white text-xl font-bold">${product.price}</span>
-                  )}
+                    
+                    {/* Stock Badge */}
+                    <span className={`px-3 py-1 text-xs font-bold rounded-full backdrop-blur-md ${
+                      product.stock > 0 
+                        ? 'bg-green-500/90 text-white' 
+                        : 'bg-red-500/90 text-white'
+                    } shadow-lg`}>
+                      {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
+                    </span>
+                  </div>
                 </div>
                 
-                {/* Stock badge - bottom right */}
-                <span className={`absolute bottom-2 right-2 px-3 py-1 text-sm font-bold rounded-md ${
-                  product.stock > 0 ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-                }`}>
-                  {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
-                </span>
-              </div>
-              
-              {/* Compact product info below image */}
-              <div className="p-3">
-                <h3 className="font-medium text-gray-900 mb-3 text-sm line-clamp-2 h-10">{product.title}</h3>
-                
-                <div className="flex gap-1">
+                {/* Action Buttons - Appear on hover */}
+                <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/40 backdrop-blur-sm">
                   <button
                     onClick={() => addToCart(product)}
                     disabled={product.stock === 0}
-                    className="flex-1 bg-orange-500 text-white hover:bg-orange-600 text-xs py-2 px-2 rounded transition-colors disabled:bg-gray-300"
+                    className="bg-orange-500 text-white hover:bg-orange-600 text-sm py-3 px-6 rounded-lg font-semibold transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:scale-105 disabled:hover:scale-100"
                   >
                     Add to Cart
                   </button>
                   <button
                     onClick={() => setSelectedProduct(product)}
-                    className="flex-1 bg-blue-500 text-white hover:bg-blue-600 text-xs py-2 px-2 rounded transition-colors"
+                    className="bg-white text-gray-900 hover:bg-gray-100 text-sm py-3 px-6 rounded-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105"
                   >
-                    View
+                    View Details
                   </button>
                 </div>
               </div>
@@ -588,41 +599,57 @@ export default function CustomerProducts() {
                 <h3 className="font-semibold mb-2">Order Items</h3>
                 <div className="space-y-3">
                   {cart.map(item => (
-                    <div key={item.productId} className="flex justify-between items-center p-3 border rounded-lg bg-gray-50">
-                      <div className="flex items-center space-x-4">
-                        <img
-                          src={item.imageUrl || '/placeholder.png'}
-                          alt={item.title}
-                          className="w-16 h-16 object-cover rounded-lg"
-                        />
-                        <div>
-                          <span className="font-medium text-gray-900">{item.title}</span>
-                          <div className="text-sm text-gray-600">Quantity: {item.qty}</div>
-                          {item.hasDiscount && (
-                            <div className="text-xs text-green-600 font-medium flex items-center space-x-1">
-                              <span className="text-red-600">×</span>
-                              <span>Originally ${item.originalPrice} → Save ${(item.originalPrice - item.price).toFixed(2)}</span>
+                    <div key={item.productId} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 group">
+                      <div className="relative h-32 bg-gray-100 overflow-hidden">
+                        {item.imageUrl ? (
+                          <>
+                            <img
+                              src={item.imageUrl}
+                              alt={item.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent"></div>
+                          </>
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-200">
+                            <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        )}
+                        
+                        {/* Item details overlay */}
+                        <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
+                          <h4 className="text-white font-semibold text-sm mb-1 line-clamp-1 drop-shadow-lg">{item.title}</h4>
+                          <div className="flex items-center justify-between">
+                            <span className="text-white text-xs backdrop-blur-md bg-white/20 px-2 py-1 rounded-full">Qty: {item.qty}</span>
+                            <div className="flex items-center gap-2">
+                              {item.hasDiscount ? (
+                                <>
+                                  <span className="text-gray-300 text-sm line-through">
+                                    ${(item.originalPrice * item.qty).toFixed(2)}
+                                  </span>
+                                  <span className="text-white text-lg font-bold drop-shadow-lg">
+                                    ${(item.price * item.qty).toFixed(2)}
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="text-white text-lg font-bold drop-shadow-lg">${(item.price * item.qty).toFixed(2)}</span>
+                              )}
                             </div>
-                          )}
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="bg-gray-800 rounded px-4 py-3">
-                          {item.hasDiscount ? (
-                            <div className="flex items-center space-x-3">
-                              <div className="relative">
-                                <span className="text-white text-lg line-through opacity-75">
-                                  ${(item.originalPrice * item.qty).toFixed(2)}
-                                </span>
-                                <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-red-400 font-bold text-xl">×</span>
-                              </div>
-                              <span className="text-white text-xl font-bold">
-                                ${(item.price * item.qty).toFixed(2)}
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="text-white text-xl font-bold">${(item.price * item.qty).toFixed(2)}</div>
-                          )}
+                        
+                        {/* Remove button on hover */}
+                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <button
+                            onClick={() => removeFromCart(item.productId)}
+                            className="bg-red-500/90 text-white p-1 rounded-full hover:bg-red-600 transition-colors backdrop-blur-md shadow-lg"
+                          >
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                          </button>
                         </div>
                       </div>
                     </div>

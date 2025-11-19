@@ -228,84 +228,103 @@ export default function AdminProducts() {
       </div>
 
       {/* Products Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {products.map(product => (
-          <Card key={product._id} className="overflow-hidden hover:shadow-lg transition-shadow">
-            <div className="relative w-full h-40 bg-gray-100">
+          <div key={product._id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 group">
+            {/* Full-height product image with gradient overlay */}
+            <div className="relative w-full h-80 bg-gray-100 overflow-hidden">
               {product.imageUrl ? (
-                <img
-                  src={product.imageUrl}
-                  alt={product.title}
-                  className="w-full h-full object-cover"
-                />
+                <>
+                  <img
+                    src={product.imageUrl}
+                    alt={product.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  {/* Dark gradient overlay for better text readability */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+                </>
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-400">
-                  <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 20 20">
+                <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-200">
+                  <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
                   </svg>
                 </div>
               )}
               
-              {/* Stock badge */}
-              <span className={`absolute top-2 right-2 px-2 py-1 text-xs rounded ${
-                product.stock > 10 ? 'bg-green-500 text-white' :
-                product.stock > 0 ? 'bg-yellow-500 text-white' :
-                'bg-red-500 text-white'
-              }`}>
-                {product.stock}
-              </span>
+              {/* Edit Button - Top Right */}
+              <button
+                onClick={() => handleEdit(product)}
+                className="absolute top-3 right-3 p-2 rounded-full backdrop-blur-md bg-blue-500/90 text-white hover:bg-blue-600 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-110"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                </svg>
+              </button>
+              
+              {/* Delete Button - Top Left */}
+              <button
+                onClick={() => handleDelete(product._id)}
+                className="absolute top-3 left-3 p-2 rounded-full backdrop-blur-md bg-red-500/90 text-white hover:bg-red-600 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-110"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9zM4 5a2 2 0 012-2h8a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zM8 8a1 1 0 012 0v3a1 1 0 11-2 0V8zM12 8a1 1 0 012 0v3a1 1 0 11-2 0V8z" clipRule="evenodd" />
+                </svg>
+              </button>
               
               {/* Discount badge */}
               {product.discount?.type && product.discount.value > 0 && (
-                <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded-md text-xs font-semibold">
+                <div className="absolute top-3 right-16 bg-red-500 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow-lg backdrop-blur-sm">
                   {product.discount.type === 'percentage' 
-                    ? `${product.discount.value}%`
-                    : `$${product.discount.value}`
+                    ? `${product.discount.value}% OFF`
+                    : `$${product.discount.value} OFF`
                   }
                 </div>
               )}
-            </div>
-            
-            <div className="p-3">
-              <h3 className="font-medium text-gray-900 mb-2 text-sm truncate">{product.title}</h3>
               
-              {/* Price in white background */}
-              <div className="bg-gray-800 rounded-md p-2 mb-3">
-                {product.discount?.type && product.discount.value > 0 ? (
-                  <div className="text-center">
-                    <div className="text-xs text-gray-300 line-through relative">
-                      <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-red-400 font-bold">×</span>
-                      ${product.price}
-                    </div>
-                    <div className="text-lg font-bold text-white">
-                      ${product.finalPrice ? product.finalPrice.toFixed(2) : (
-                        product.discount.type === 'percentage' 
-                          ? (product.price * (1 - product.discount.value / 100)).toFixed(2)
-                          : Math.max(0, product.price - product.discount.value).toFixed(2)
-                      )}
-                    </div>
+              {/* Product Title - Bottom with transparency */}
+              <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+                <h3 className="font-semibold text-white text-base mb-3 line-clamp-2 drop-shadow-lg">
+                  {product.title}
+                </h3>
+                
+                {/* Price and Stock Row */}
+                <div className="flex items-end justify-between">
+                  {/* Price Display */}
+                  <div className="flex items-center gap-2">
+                    {product.discount?.type && product.discount.value > 0 ? (
+                      <>
+                        <span className="text-gray-300 text-sm line-through">
+                          ${product.price}
+                        </span>
+                        <span className="text-white text-2xl font-bold drop-shadow-lg">
+                          ${product.finalPrice ? product.finalPrice.toFixed(2) : (
+                            product.discount.type === 'percentage' 
+                              ? (product.price * (1 - product.discount.value / 100)).toFixed(2)
+                              : Math.max(0, product.price - product.discount.value).toFixed(2)
+                          )}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-white text-2xl font-bold drop-shadow-lg">
+                        ${product.price}
+                      </span>
+                    )}
                   </div>
-                ) : (
-                  <div className="text-lg font-bold text-white text-center">${product.price}</div>
-                )}
-              </div>
-              
-              <div className="flex gap-1">
-                <Button
-                  onClick={() => handleEdit(product)}
-                  className="flex-1 bg-yellow-500 text-white hover:bg-yellow-600 text-xs py-2"
-                >
-                  Edit
-                </Button>
-                <Button
-                  onClick={() => handleDelete(product._id)}
-                  className="flex-1 bg-red-500 text-white hover:bg-red-600 text-xs py-2"
-                >
-                  Delete
-                </Button>
+                  
+                  {/* Stock Badge */}
+                  <span className={`px-3 py-1 text-xs font-bold rounded-full backdrop-blur-md shadow-lg ${
+                    product.stock > 10 
+                      ? 'bg-green-500/90 text-white'
+                      : product.stock > 0 
+                      ? 'bg-yellow-500/90 text-white'
+                      : 'bg-red-500/90 text-white'
+                  }`}>
+                    Stock: {product.stock}
+                  </span>
+                </div>
               </div>
             </div>
-          </Card>
+          </div>
         ))}
       </div>
 
