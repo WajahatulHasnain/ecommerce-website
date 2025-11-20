@@ -109,7 +109,7 @@ export default function AdminOrders() {
                   {/* Order Header */}
                   <div className="flex items-center gap-4 mb-4">
                     <div>
-                      <h3 className="text-lg font-bold text-gray-900">#{order._id.slice(-8)}</h3>
+                      <h3 className="text-lg font-bold text-gray-900">Order{order.orderNumber || order._id.slice(-4)}</h3>
                       <p className="text-sm text-gray-500">Order ID</p>
                     </div>
                     <div className={`px-3 py-2 rounded-lg border text-sm font-semibold flex items-center gap-2 ${getStatusColor(order.status)}`}>
@@ -240,7 +240,7 @@ export default function AdminOrders() {
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">
-                  Order Details #{selectedOrder._id.slice(-8)}
+                  Order Details Order{selectedOrder.orderNumber || selectedOrder._id.slice(-4)}
                 </h2>
                 <button
                   onClick={() => setShowDetailModal(false)}
@@ -276,7 +276,7 @@ export default function AdminOrders() {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span>Order ID:</span>
-                      <span className="font-mono">{selectedOrder._id}</span>
+                      <span className="font-mono">{selectedOrder.orderNumber ? `Order${selectedOrder.orderNumber}` : selectedOrder._id}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Date:</span>

@@ -8,6 +8,7 @@ const User = require("../models/User");
 const { uploadToImgBB } = require("../utils/imgbbUpload");
 const path = require("path");
 const fs = require("fs");
+const settingsController = require("../controllers/admin/settingsController");
 
 // Apply auth and admin middleware to all routes
 router.use(auth, adminOnly);
@@ -266,6 +267,11 @@ router.get("/users", async (req, res) => {
     res.status(500).json({ success: false, msg: "Failed to fetch users" });
   }
 });
+
+// Settings routes
+router.get("/settings", settingsController.getSettings);
+router.put("/settings", settingsController.updateSettings);
+router.post("/settings/reset", settingsController.resetSettings);
 
 // Mount coupon routes
 router.use("/coupons", require("./admin/coupons"));

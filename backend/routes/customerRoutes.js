@@ -414,9 +414,11 @@ router.get("/orders", async (req, res) => {
 // Profile Management
 router.get("/profile", async (req, res) => {
   try {
-    const user = await Customer.findById(req.user._id).select("-password");
+    // req.user is already populated by auth middleware with full user data
+    const user = req.user;
     res.json({ success: true, data: user });
   } catch (error) {
+    console.error('Profile fetch error:', error);
     res.status(500).json({ success: false, msg: "Failed to fetch profile" });
   }
 });
@@ -425,15 +427,162 @@ router.put("/profile", async (req, res) => {
   try {
     const { name, email, phone, address } = req.body;
     
-    const user = await Customer.findByIdAndUpdate(
-      req.user._id,
-      { name, email, phone, address },
-      { new: true, runValidators: true }
-    ).select("-password");
+    // Validate required fields
+    if (!name || !email) {
+      return res.status(400).json({ 
+        success: false, 
+        msg: "Name and email are required" 
+      });
+    }
     
-    res.json({ success: true, data: user });
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ 
+        success: false, 
+        msg: "Please provide a valid email address" 
+      });
+    }
+    
+    const updateData = { name, email, phone, address };
+    let updatedUser;
+    
+    // Update in the appropriate model based on user type
+    if (req.user.role === 'customer') {
+      // Check if email is already taken by another customer
+      const existingCustomer = await Customer.findOne({ 
+        email: email.toLowerCase(), 
+        _id: { $ne: req.user._id } 
+      });
+      
+      if (existingCustomer) {
+        return res.status(400).json({ 
+          success: false, 
+          msg: "Email address is already in use" 
+        });
+      }
+      
+      updatedUser = await Customer.findByIdAndUpdate(
+        req.user._id,
+        updateData,
+        { new: true, runValidators: true }
+      ).select("-password");
+    } else {
+      // Check if email is already taken by another user
+      const existingUser = await User.findOne({ 
+        email: email.toLowerCase(), 
+        _id: { $ne: req.user._id } 
+      });
+      
+      if (existingUser) {
+        return res.status(400).json({ 
+          success: false, 
+          msg: "Email address is already in use" 
+        });
+      }
+      
+      updatedUser = await User.findByIdAndUpdate(
+        req.user._id,
+        updateData,
+        { new: true, runValidators: true }
+      ).select("-password");
+    }
+    
+    if (!updatedUser) {
+      return res.status(404).json({ 
+        success: false, 
+        msg: "User not found" 
+      });
+    }
+    
+    console.log('✅ Profile updated successfully for user:', updatedUser.email);
+    res.json({ 
+      success: true, 
+      data: updatedUser,
+      msg: "Profile updated successfully"
+    });
+    
   } catch (error) {
-    res.status(400).json({ success: false, msg: error.message });
+    console.error('Profile update error:', error);
+    
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        msg: "Validation Error: " + messages.join(', ')
+      });
+    }
+    
+    res.status(500).json({ 
+      success: false, 
+      msg: "Failed to update profile" 
+    });
+  }
+});
+
+// Password change for customers
+router.put("/password", async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    
+    // Validate required fields
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ 
+        success: false, 
+        msg: "Current password and new password are required" 
+      });
+    }
+    
+    // Validate new password length
+    if (newPassword.length < 6) {
+      return res.status(400).json({ 
+        success: false, 
+        msg: "New password must be at least 6 characters long" 
+      });
+    }
+    
+    let user;
+    
+    // Get user with password field for verification
+    if (req.user.role === 'customer') {
+      user = await Customer.findById(req.user._id);
+    } else {
+      user = await User.findById(req.user._id);
+    }
+    
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        msg: "User not found" 
+      });
+    }
+    
+    // Verify current password
+    const isCurrentPasswordValid = await user.matchPassword(currentPassword);
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({ 
+        success: false, 
+        msg: "Current password is incorrect" 
+      });
+    }
+    
+    // Update password (pre-save hook will hash it)
+    user.password = newPassword;
+    await user.save();
+    
+    console.log('✅ Password updated successfully for user:', user.email);
+    
+    res.json({ 
+      success: true, 
+      msg: "Password updated successfully" 
+    });
+    
+  } catch (error) {
+    console.error('Password update error:', error);
+    res.status(500).json({ 
+      success: false, 
+      msg: "Failed to update password" 
+    });
   }
 });
 

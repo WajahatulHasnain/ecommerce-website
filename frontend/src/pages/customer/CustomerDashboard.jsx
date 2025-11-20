@@ -209,7 +209,7 @@ export default function CustomerDashboard() {
                       <span className="text-white text-lg font-bold">📋</span>
                     </div>
                     <div>
-                      <p className="font-bold text-warm-gray-800">Order #{order._id.slice(-6)}</p>
+                      <p className="font-bold text-warm-gray-800">Order{order.orderNumber || order._id.slice(-4)}</p>
                       <p className="text-sm text-warm-gray-500">
                         {new Date(order.createdAt).toLocaleDateString('en-US', { 
                           month: 'short', 

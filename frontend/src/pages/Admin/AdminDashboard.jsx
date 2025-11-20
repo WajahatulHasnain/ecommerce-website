@@ -37,8 +37,8 @@ export default function AdminDashboard() {
 
   const stats = [
     {
-      title: 'Total Users',
-      value: dashboardData?.totalUsers || 0,
+      title: 'Total Customers',
+      value: dashboardData?.totalCustomers || 0,
       icon: '👥',
       color: 'bg-warm-blue'
     },

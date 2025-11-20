@@ -501,7 +501,7 @@ export default function CustomerProducts() {
                 {/* Wishlist Heart Button - Top Right */}
                 <button
                   onClick={() => toggleWishlist(product._id)}
-                  className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-md transition-all duration-200 ${
+                  className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-md transition-all duration-200 z-20 ${
                     wishlist.includes(product._id)
                       ? 'bg-red-500/90 text-white scale-110'
                       : 'bg-white/80 text-gray-600 hover:text-red-500 hover:bg-white/95'
@@ -558,17 +558,17 @@ export default function CustomerProducts() {
                 </div>
                 
                 {/* Action Buttons - Appear on hover */}
-                <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/40 backdrop-blur-sm">
+                <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/40 backdrop-blur-sm z-10">
                   <button
                     onClick={() => addToCart(product)}
                     disabled={product.stock === 0}
-                    className="bg-orange-500 text-white hover:bg-orange-600 text-sm py-3 px-6 rounded-lg font-semibold transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:scale-105 disabled:hover:scale-100"
+                    className="bg-orange-500 text-white hover:bg-orange-600 text-sm py-3 px-6 rounded-lg font-semibold transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:scale-105 disabled:hover:scale-100 z-10"
                   >
                     Add to Cart
                   </button>
                   <button
                     onClick={() => setSelectedProduct(product)}
-                    className="bg-white text-gray-900 hover:bg-gray-100 text-sm py-3 px-6 rounded-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105"
+                    className="bg-white text-gray-900 hover:bg-gray-100 text-sm py-3 px-6 rounded-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 z-10"
                   >
                     View Details
                   </button>
@@ -597,10 +597,11 @@ export default function CustomerProducts() {
               {/* Cart Items */}
               <div className="mb-6">
                 <h3 className="font-semibold mb-2">Order Items</h3>
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {cart.map(item => (
-                    <div key={item.productId} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 group">
-                      <div className="relative h-32 bg-gray-100 overflow-hidden">
+                    <div key={item.productId} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 group">
+                      {/* Full-height product image with gradient overlay - matching main cards */}
+                      <div className="relative w-full h-80 bg-gray-100 overflow-hidden">
                         {item.imageUrl ? (
                           <>
                             <img
@@ -608,48 +609,87 @@ export default function CustomerProducts() {
                               alt={item.title}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent"></div>
+                            {/* Dark gradient overlay for better text readability */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
                           </>
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-200">
-                            <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                            <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
                             </svg>
                           </div>
                         )}
                         
-                        {/* Item details overlay */}
-                        <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
-                          <h4 className="text-white font-semibold text-sm mb-1 line-clamp-1 drop-shadow-lg">{item.title}</h4>
-                          <div className="flex items-center justify-between">
-                            <span className="text-white text-xs backdrop-blur-md bg-white/20 px-2 py-1 rounded-full">Qty: {item.qty}</span>
+                        {/* Remove button - Top Right (similar to wishlist position) */}
+                        <button
+                          onClick={() => removeFromCart(item.productId)}
+                          className="absolute top-3 right-3 p-2 rounded-full bg-red-500/90 text-white hover:bg-red-600 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-110 z-20"
+                        >
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                        
+                        {/* Discount badge - Top Left (if item has discount) */}
+                        {item.hasDiscount && (
+                          <div className="absolute top-3 left-3 bg-green-500 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow-lg backdrop-blur-sm">
+                            DISCOUNT
+                          </div>
+                        )}
+                        
+                        {/* Product Title & Details - Bottom with transparency */}
+                        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+                          <h3 className="font-semibold text-white text-base mb-3 line-clamp-2 drop-shadow-lg">
+                            {item.title}
+                          </h3>
+                          
+                          {/* Price and Quantity Row */}
+                          <div className="flex items-end justify-between mb-3">
+                            {/* Price Display */}
                             <div className="flex items-center gap-2">
                               {item.hasDiscount ? (
                                 <>
                                   <span className="text-gray-300 text-sm line-through">
                                     ${(item.originalPrice * item.qty).toFixed(2)}
                                   </span>
-                                  <span className="text-white text-lg font-bold drop-shadow-lg">
+                                  <span className="text-white text-2xl font-bold drop-shadow-lg">
                                     ${(item.price * item.qty).toFixed(2)}
                                   </span>
                                 </>
                               ) : (
-                                <span className="text-white text-lg font-bold drop-shadow-lg">${(item.price * item.qty).toFixed(2)}</span>
+                                <span className="text-white text-2xl font-bold drop-shadow-lg">
+                                  ${(item.price * item.qty).toFixed(2)}
+                                </span>
                               )}
                             </div>
+                            
+                            {/* Quantity Badge */}
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => updateCartQty(item.productId, item.qty - 1)}
+                                className="bg-white/20 backdrop-blur-md text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/30 transition-all duration-200"
+                              >
+                                −
+                              </button>
+                              <span className="bg-white/90 text-gray-900 px-3 py-1 rounded-full text-sm font-bold min-w-[3rem] text-center">
+                                Qty: {item.qty}
+                              </span>
+                              <button
+                                onClick={() => updateCartQty(item.productId, item.qty + 1)}
+                                disabled={item.qty >= item.maxStock}
+                                className="bg-white/20 backdrop-blur-md text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/30 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                +
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                        
-                        {/* Remove button on hover */}
-                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                          <button
-                            onClick={() => removeFromCart(item.productId)}
-                            className="bg-red-500/90 text-white p-1 rounded-full hover:bg-red-600 transition-colors backdrop-blur-md shadow-lg"
-                          >
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                            </svg>
-                          </button>
+                          
+                          {/* Stock info */}
+                          <div className="text-center">
+                            <span className="bg-blue-500/90 text-white px-3 py-1 text-xs font-bold rounded-full backdrop-blur-md shadow-lg">
+                              {item.maxStock - item.qty} left in stock
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>

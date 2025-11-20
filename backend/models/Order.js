@@ -1,6 +1,12 @@
 const mongoose = require("mongoose");
+const Counter = require("./Counter");
 
 const orderSchema = new mongoose.Schema({
+  orderNumber: {
+    type: Number,
+    unique: true,
+    required: true
+  },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -78,5 +84,26 @@ const orderSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+// Pre-save hook to auto-generate order number
+orderSchema.pre('save', async function(next) {
+  if (this.isNew && !this.orderNumber) {
+    try {
+      this.orderNumber = await Counter.getNextSequence('order');
+    } catch (error) {
+      return next(error);
+    }
+  }
+  next();
+});
+
+// Virtual for display order ID (Order1, Order2, etc.)
+orderSchema.virtual('displayOrderId').get(function() {
+  return `Order${this.orderNumber}`;
+});
+
+// Ensure virtual fields are serialized
+orderSchema.set('toJSON', { virtuals: true });
+orderSchema.set('toObject', { virtuals: true });
 
 module.exports = mongoose.model("Order", orderSchema);

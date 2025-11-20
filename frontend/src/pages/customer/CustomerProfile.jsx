@@ -86,11 +86,17 @@ export default function CustomerProfile() {
       });
       
       if (response.data.success) {
-        alert('Profile updated successfully!');
+        alert(response.data.msg || 'Profile updated successfully!');
+        // Update local profile data with the response
+        setProfileData(prev => ({
+          ...prev,
+          ...response.data.data
+        }));
       }
     } catch (error) {
       console.error('Failed to update profile:', error);
-      alert('Failed to update profile');
+      const errorMsg = error.response?.data?.msg || 'Failed to update profile';
+      alert(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -113,19 +119,25 @@ export default function CustomerProfile() {
     
     try {
       const token = localStorage.getItem('token');
-      await api.put('/customer/password', passwordData, {
+      const response = await api.put('/customer/password', {
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      alert('Password updated successfully!');
-      setPasswordData({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      });
+      if (response.data.success) {
+        alert(response.data.msg || 'Password updated successfully!');
+        setPasswordData({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        });
+      }
     } catch (error) {
       console.error('Failed to update password:', error);
-      alert('Failed to update password');
+      const errorMsg = error.response?.data?.msg || 'Failed to update password';
+      alert(errorMsg);
     } finally {
       setLoading(false);
     }
