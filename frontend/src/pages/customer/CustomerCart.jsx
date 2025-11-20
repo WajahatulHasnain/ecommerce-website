@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
+import { useSettings } from '../../context/SettingsContext';
 
 export default function CustomerCart() {
+  const { formatPrice, getCurrencySymbol, settings } = useSettings();
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [couponCode, setCouponCode] = useState('');
@@ -124,7 +126,7 @@ export default function CustomerCart() {
         
         setCouponData(coupon);
         setCouponDiscount(discount);
-        alert(`Coupon applied! You saved $${discount.toFixed(2)}`);
+        alert(`Coupon applied! You saved ${formatPrice(discount)}`);
       }
     } catch (error) {
       console.error('Coupon validation failed:', error);
@@ -298,15 +300,15 @@ export default function CustomerCart() {
                         {item.productId.discount?.enabled && item.productId.finalPrice < item.productId.price ? (
                           <>
                             <span className="text-gray-300 text-sm line-through">
-                              ${(item.productId.price * item.quantity).toFixed(2)}
+                              {formatPrice(item.productId.price * item.quantity)}
                             </span>
                             <span className="text-white text-2xl font-bold drop-shadow-lg">
-                              ${(item.productId.finalPrice * item.quantity).toFixed(2)}
+                              {formatPrice(item.productId.finalPrice * item.quantity)}
                             </span>
                           </>
                         ) : (
                           <span className="text-white text-2xl font-bold drop-shadow-lg">
-                            ${(item.productId.price * item.quantity).toFixed(2)}
+                            {formatPrice(item.productId.price * item.quantity)}
                           </span>
                         )}
                       </div>
@@ -343,7 +345,7 @@ export default function CustomerCart() {
               </div>
               {couponData && (
                 <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm text-green-700">
-                  ✅ Coupon "{couponData.code}" applied - Save ${couponDiscount.toFixed(2)}
+                  ✅ Coupon "{couponData.code}" applied - Save {formatPrice(couponDiscount)}
                 </div>
               )}
             </Card>
@@ -355,26 +357,26 @@ export default function CustomerCart() {
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span>Subtotal ({cartItems.length} items)</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>{formatPrice(subtotal)}</span>
                 </div>
                 {couponDiscount > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span>Coupon Discount</span>
-                    <span>-${couponDiscount.toFixed(2)}</span>
+                    <span>-{formatPrice(couponDiscount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span>Tax (10%)</span>
-                  <span>${tax.toFixed(2)}</span>
+                  <span>Tax ({settings.taxRate}%)</span>
+                  <span>{formatPrice(tax)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Shipping</span>
-                  <span>{shipping === 0 ? 'Free' : `$${shipping.toFixed(2)}`}</span>
+                  <span>{shipping === 0 ? 'Free' : formatPrice(shipping)}</span>
                 </div>
                 <hr />
                 <div className="flex justify-between font-bold text-lg">
                   <span>Total</span>
-                  <span>${total.toFixed(2)}</span>
+                  <span>{formatPrice(total)}</span>
                 </div>
               </div>
               
@@ -428,11 +430,11 @@ export default function CustomerCart() {
                       <div className="text-right">
                         {item.productId.discount?.enabled && item.productId.finalPrice < item.productId.price ? (
                           <div>
-                            <div className="text-green-600 font-semibold">${((item.productId.finalPrice || item.productId.price) * item.quantity).toFixed(2)}</div>
-                            <div className="text-xs text-gray-400 line-through">${(item.productId.price * item.quantity).toFixed(2)}</div>
+                            <div className="text-green-600 font-semibold">{formatPrice((item.productId.finalPrice || item.productId.price) * item.quantity)}</div>
+                            <div className="text-xs text-gray-400 line-through">{formatPrice(item.productId.price * item.quantity)}</div>
                           </div>
                         ) : (
-                          <div className="font-semibold">${((item.productId.finalPrice || item.productId.price) * item.quantity).toFixed(2)}</div>
+                          <div className="font-semibold">{formatPrice((item.productId.finalPrice || item.productId.price) * item.quantity)}</div>
                         )}
                       </div>
                     </div>
@@ -441,17 +443,17 @@ export default function CustomerCart() {
                 <div className="mt-4 p-4 bg-gray-50 rounded">
                   <div className="flex justify-between items-center">
                     <span className="font-semibold">Subtotal:</span>
-                    <span className="font-semibold">${calculateSubtotal().toFixed(2)}</span>
+                    <span className="font-semibold">{formatPrice(calculateSubtotal())}</span>
                   </div>
                   {couponDiscount > 0 && (
                     <div className="flex justify-between items-center text-green-600">
                       <span>Coupon Discount:</span>
-                      <span>-${couponDiscount.toFixed(2)}</span>
+                      <span>-{formatPrice(couponDiscount)}</span>
                     </div>
                   )}
                   <div className="flex justify-between items-center text-lg font-bold border-t pt-2 mt-2">
                     <span>Total:</span>
-                    <span>${(Math.max(0, calculateSubtotal() - couponDiscount)).toFixed(2)}</span>
+                    <span>{formatPrice(Math.max(0, calculateSubtotal() - couponDiscount))}</span>
                   </div>
                 </div>
               </div>
@@ -583,7 +585,7 @@ export default function CustomerCart() {
                   disabled={processing}
                   className="flex-1 bg-green-600 text-white hover:bg-green-700 py-3"
                 >
-                  {processing ? 'Processing...' : `Place Order - $${(Math.max(0, calculateSubtotal() - couponDiscount)).toFixed(2)}`}
+                  {processing ? 'Processing...' : `Place Order - ${formatPrice(Math.max(0, calculateSubtotal() - couponDiscount))}`}
                 </Button>
                 <Button
                   onClick={() => setShowCheckoutModal(false)}

@@ -15,31 +15,22 @@ const productSchema = new mongoose.Schema({
     required: [true, "Product price is required"],
     min: [0, "Price cannot be negative"]
   },
-  // Enhanced discount system
+  // Enhanced discount system - completely optional
   discount: {
     type: {
       type: String,
-      enum: ['percentage', 'fixed'],
-      default: null
+      enum: ['percentage', 'fixed']
     },
     value: {
       type: Number,
-      min: 0,
-      default: 0
+      min: 0
     },
     maxDiscount: {
       type: Number,
-      min: 0,
-      default: null
+      min: 0
     },
-    startDate: {
-      type: Date,
-      default: null
-    },
-    endDate: {
-      type: Date,
-      default: null
-    }
+    startDate: Date,
+    endDate: Date
   },
   category: {
     type: String,

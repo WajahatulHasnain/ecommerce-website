@@ -7,6 +7,8 @@ export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all, admin, customer
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -29,22 +31,14 @@ export default function AdminUsers() {
     }
   };
 
-  const toggleUserStatus = async (userId, isActive) => {
-    try {
-      const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
-      const response = await api.put(`/admin/users/${userId}/status`, 
-        { isActive: !isActive },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      if (response.data.success) {
-        setUsers(users.map(user => 
-          user._id === userId ? { ...user, isActive: !isActive } : user
-        ));
-      }
-    } catch (error) {
-      console.error('Failed to update user status:', error);
-    }
+  const viewUserProfile = (user) => {
+    setSelectedUser(user);
+    setShowProfileModal(true);
+  };
+
+  const closeProfileModal = () => {
+    setSelectedUser(null);
+    setShowProfileModal(false);
   };
 
   const filteredUsers = users.filter(user => {
@@ -136,18 +130,11 @@ export default function AdminUsers() {
               </div>
 
               <div className="flex gap-2">
-                <Button
-                  onClick={() => toggleUserStatus(user._id, user.isActive)}
-                  className={`text-sm px-3 py-1 ${
-                    user.isActive 
-                      ? 'bg-red-600 hover:bg-red-700 text-white' 
-                      : 'bg-green-600 hover:bg-green-700 text-white'
-                  }`}
+                <Button 
+                  onClick={() => viewUserProfile(user)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
                 >
-                  {user.isActive ? 'Deactivate' : 'Activate'}
-                </Button>
-                <Button className="bg-blue-600 text-white text-sm px-3 py-1">
-                  View Profile
+                  👤 View Profile
                 </Button>
               </div>
             </Card>
@@ -163,6 +150,139 @@ export default function AdminUsers() {
           </div>
         )}
       </div>
+
+      {/* User Profile Modal */}
+      {showProfileModal && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Customer Profile</h2>
+                <button
+                  onClick={closeProfileModal}
+                  className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="space-y-6">
+                {/* Basic Information */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    👤 Basic Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <span className="text-sm font-medium text-gray-600">Full Name:</span>
+                      <p className="text-gray-900 font-semibold">{selectedUser.name}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-600">Email:</span>
+                      <p className="text-gray-900 font-semibold">{selectedUser.email}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-600">Role:</span>
+                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                        selectedUser.role === 'admin' 
+                          ? 'bg-purple-100 text-purple-800' 
+                          : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {selectedUser.role.charAt(0).toUpperCase() + selectedUser.role.slice(1)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-600">Status:</span>
+                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                        selectedUser.isActive 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {selectedUser.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Account Information */}
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    📅 Account Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <span className="text-sm font-medium text-gray-600">Account Created:</span>
+                      <p className="text-gray-900 font-semibold">
+                        {new Date(selectedUser.createdAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-600">Last Updated:</span>
+                      <p className="text-gray-900 font-semibold">
+                        {new Date(selectedUser.updatedAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                    {selectedUser.lastLogin && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-600">Last Login:</span>
+                        <p className="text-gray-900 font-semibold">
+                          {new Date(selectedUser.lastLogin).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                    )}
+                    <div>
+                      <span className="text-sm font-medium text-gray-600">User ID:</span>
+                      <p className="text-gray-900 font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+                        {selectedUser._id}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Information */}
+                {selectedUser.phone && (
+                  <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      📞 Contact Information
+                    </h3>
+                    <div>
+                      <span className="text-sm font-medium text-gray-600">Phone:</span>
+                      <p className="text-gray-900 font-semibold">{selectedUser.phone}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end mt-6 pt-6 border-t border-gray-200">
+                <Button
+                  onClick={closeProfileModal}
+                  className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

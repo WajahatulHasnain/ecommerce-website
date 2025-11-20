@@ -7,9 +7,36 @@ const User = require("../models/User");
 const Customer = require("../models/Customer");
 const Wishlist = require("../models/Wishlist");
 const Cart = require("../models/Cart");
+const Settings = require("../models/Settings");
 const mongoose = require("mongoose");
 
-// Apply auth and customer middleware to all routes
+// Public route to get store settings (no auth required)
+router.get("/settings", async (req, res) => {
+  try {
+    const settings = await Settings.getSettings();
+    // Return only public settings with currency symbol
+    const currencySymbol = settings.getCurrencySymbol();
+    const publicSettings = {
+      storeName: settings.storeName,
+      storeDescription: settings.storeDescription,
+      currency: {
+        code: settings.currency.code,
+        symbol: currencySymbol,
+        rate: settings.currency.rate
+      },
+      taxRate: settings.taxRate,
+      shippingFee: settings.shippingFee,
+      freeShippingThreshold: settings.freeShippingThreshold,
+      exchangeRates: settings.exchangeRates
+    };
+    res.json({ success: true, data: publicSettings });
+  } catch (error) {
+    console.error('Public settings fetch error:', error);
+    res.status(500).json({ success: false, msg: "Failed to fetch settings" });
+  }
+});
+
+// Apply auth and customer middleware to protected routes
 router.use(auth, customerOnly);
 
 // Dashboard

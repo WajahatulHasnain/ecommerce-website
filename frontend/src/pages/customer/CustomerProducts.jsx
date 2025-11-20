@@ -3,8 +3,10 @@ import api from '../../utils/api';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import { useSettings } from '../../context/SettingsContext';
 
 export default function CustomerProducts() {
+  const { formatPrice, getCurrencySymbol } = useSettings();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(null);
@@ -449,14 +451,14 @@ export default function CustomerProducts() {
               {appliedCoupon ? (
                 <div>
                   <div className="text-sm text-gray-500 line-through">
-                    ${getTotalPrice().toFixed(2)}
+                    {formatPrice(getTotalPrice())}
                   </div>
                   <div className="font-bold text-green-600">
-                    ${getFinalTotal().toFixed(2)}
+                    {formatPrice(getFinalTotal())}
                   </div>
                 </div>
               ) : (
-                <span className="font-medium">${getTotalPrice().toFixed(2)}</span>
+                  <span className="font-medium">{formatPrice(getTotalPrice())}</span>
               )}
             </div>
             <Button 
@@ -528,25 +530,23 @@ export default function CustomerProducts() {
                   
                   {/* Price and Stock Row */}
                   <div className="flex items-end justify-between">
-                    {/* Price Display */}
-                    <div className="flex items-center gap-2">
-                      {product.discount?.type && product.discount?.value > 0 && product.finalPrice < product.price ? (
-                        <>
-                          <span className="text-gray-300 text-sm line-through">
-                            ${product.price}
-                          </span>
+                      {/* Price Display */}
+                      <div className="flex items-center gap-2">
+                        {product.discount?.type && product.discount?.value > 0 && product.finalPrice < product.price ? (
+                          <>
+                            <span className="text-gray-300 text-sm line-through">
+                              {formatPrice(product.price)}
+                            </span>
+                            <span className="text-white text-2xl font-bold drop-shadow-lg">
+                              {formatPrice(product.finalPrice)}
+                            </span>
+                          </>
+                        ) : (
                           <span className="text-white text-2xl font-bold drop-shadow-lg">
-                            ${product.finalPrice}
+                            {formatPrice(product.price)}
                           </span>
-                        </>
-                      ) : (
-                        <span className="text-white text-2xl font-bold drop-shadow-lg">
-                          ${product.price}
-                        </span>
-                      )}
-                    </div>
-                    
-                    {/* Stock Badge */}
+                        )}
+                      </div>                    {/* Stock Badge */}
                     <span className={`px-3 py-1 text-xs font-bold rounded-full backdrop-blur-md ${
                       product.stock > 0 
                         ? 'bg-green-500/90 text-white' 
@@ -661,7 +661,7 @@ export default function CustomerProducts() {
                   <div className="space-y-3">
                     <div className="flex justify-between text-gray-700 text-lg">
                       <span>Subtotal:</span>
-                      <span className="font-bold text-xl">${getTotalPrice().toFixed(2)}</span>
+                    <span className="font-bold text-xl">{formatPrice(getTotalPrice())}</span>
                     </div>
                     {getProductDiscountSavings() > 0 && (
                       <div className="flex justify-between text-green-600 text-lg">
@@ -677,7 +677,7 @@ export default function CustomerProducts() {
                     )}
                     <div className="border-t border-blue-300 pt-3 flex justify-between text-2xl font-bold text-blue-900">
                       <span>Total:</span>
-                      <span>${getFinalTotal().toFixed(2)}</span>
+                      <span>{formatPrice(getFinalTotal())}</span>
                     </div>
                   </div>
                 </div>
@@ -791,7 +791,7 @@ export default function CustomerProducts() {
                   disabled={purchasing || cart.length === 0}
                   className="flex-1 bg-green-600 text-white hover:bg-green-700"
                 >
-                  {purchasing ? 'Processing...' : `Place Order - $${getFinalTotal().toFixed(2)}`}
+                  {purchasing ? 'Processing...' : `Place Order - ${formatPrice(getFinalTotal())}`}
                 </Button>
                 <Button
                   onClick={() => setShowPurchaseModal(false)}

@@ -1,6 +1,7 @@
 import React from "react";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { SettingsProvider } from "./context/SettingsContext";
 import { AdminRoute, CustomerRoute } from "./components/ProtectedRoute";
 
 // Auth pages
@@ -139,7 +140,9 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <SettingsProvider>
+        <AppContent />
+      </SettingsProvider>
     </AuthProvider>
   );
 }

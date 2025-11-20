@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
+import { useSettings } from '../../context/SettingsContext';
 
 export default function CustomerWishlist() {
+  const { formatPrice } = useSettings();
   const [wishlistItems, setWishlistItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -141,15 +143,15 @@ export default function CustomerWishlist() {
                       {item.productId.discount?.type && item.productId.discount?.value > 0 && item.productId.finalPrice < item.productId.price ? (
                         <>
                           <span className="text-gray-300 text-sm line-through">
-                            ${item.productId.price}
+                            {formatPrice(item.productId.price)}
                           </span>
                           <span className="text-white text-2xl font-bold drop-shadow-lg">
-                            ${item.productId.finalPrice}
+                            {formatPrice(item.productId.finalPrice)}
                           </span>
                         </>
                       ) : (
                         <span className="text-white text-2xl font-bold drop-shadow-lg">
-                          ${item.productId.price}
+                          {formatPrice(item.productId.price)}
                         </span>
                       )}
                     </div>

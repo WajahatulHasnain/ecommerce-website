@@ -74,19 +74,28 @@ router.post("/products", upload.single('image'), async (req, res) => {
       tags: tags ? tags.split(',').map(tag => tag.trim()) : []
     };
     
-    // Handle discount data
-    if (discount) {
-      const discountData = typeof discount === 'string' ? JSON.parse(discount) : discount;
-      if (discountData && (discountData.type === 'percentage' || discountData.type === 'fixed') && discountData.value > 0) {
-        productData.discount = {
-          type: discountData.type,
-          value: Number(discountData.value),
-          maxDiscount: discountData.maxDiscount ? Number(discountData.maxDiscount) : null,
-          startDate: discountData.startDate || null,
-          endDate: discountData.endDate || null
-        };
+    // Handle discount data - completely optional, skip if null/empty/invalid
+    if (discount && discount !== '' && discount !== 'null' && discount !== 'undefined') {
+      try {
+        const discountData = typeof discount === 'string' ? JSON.parse(discount) : discount;
+        if (discountData && 
+            discountData.type && 
+            (discountData.type === 'percentage' || discountData.type === 'fixed') && 
+            discountData.value && 
+            Number(discountData.value) > 0) {
+          productData.discount = {
+            type: discountData.type,
+            value: Number(discountData.value),
+            maxDiscount: discountData.maxDiscount ? Number(discountData.maxDiscount) : null,
+            startDate: discountData.startDate || null,
+            endDate: discountData.endDate || null
+          };
+        }
+      } catch (parseError) {
+        console.log('Discount parsing failed, proceeding without discount:', parseError.message);
       }
     }
+    // If no valid discount data, product will be created without discount field
     
     // Upload image to ImgBB if file was provided
     if (req.file) {
