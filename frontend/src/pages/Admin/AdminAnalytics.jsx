@@ -5,15 +5,17 @@ import Card from '../../components/ui/Card';
 export default function AdminAnalytics() {
   const [analyticsData, setAnalyticsData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [trendPeriod, setTrendPeriod] = useState('total'); // NEW: Trend selector
 
   useEffect(() => {
-    fetchAnalytics();
-  }, []);
+    fetchAnalytics(trendPeriod);
+  }, [trendPeriod]);
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = async (period = 'total') => {
     try {
+      setLoading(true);
       const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
-      const response = await api.get('/admin/analytics/summary', {
+      const response = await api.get(`/admin/analytics/summary?period=${period}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -25,6 +27,56 @@ export default function AdminAnalytics() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const trendOptions = [
+    { value: 'total', label: 'All Time', icon: '🌍' },
+    { value: 'monthly', label: 'Last 30 Days', icon: '📅' },
+    { value: 'weekly', label: 'Last 7 Days', icon: '📊' }
+  ];
+
+  const ChartPlaceholder = ({ title, data, emptyMessage }) => {
+    if (!data || data.length === 0) {
+      return (
+        <div className="h-64 bg-gray-100 rounded-lg flex flex-col items-center justify-center">
+          <p className="text-gray-500 mb-2">📊 {title}</p>
+          <p className="text-sm text-gray-400">{emptyMessage}</p>
+        </div>
+      );
+    }
+
+    // Simple bar chart visualization
+    const maxValue = Math.max(...data.map(item => item.revenue || 0));
+    
+    return (
+      <div className="h-64 bg-gray-50 rounded-lg p-4">
+        <div className="flex items-end h-full space-x-2">
+          {data.slice(-10).map((item, index) => { // Show last 10 data points
+            const height = maxValue > 0 ? (item.revenue / maxValue) * 200 : 10;
+            const date = new Date(item.date + (item.date.length === 7 ? '-01' : '')).toLocaleDateString();
+            
+            return (
+              <div key={index} className="flex-1 flex flex-col items-center">
+                <div 
+                  className="bg-blue-600 rounded-t min-h-[10px] w-full transition-all duration-500"
+                  style={{ height: `${height}px` }}
+                  title={`${date}: $${item.revenue.toFixed(2)} (${item.orderCount} orders)`}
+                ></div>
+                <div className="text-xs text-gray-500 mt-1 transform -rotate-45 origin-top-left">
+                  {item.date.length === 7 ? item.date : item.date.slice(-5)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-2 text-center">
+          <p className="text-sm text-gray-600">
+            {data.length} data point{data.length !== 1 ? 's' : ''} • 
+            Max: ${maxValue.toFixed(2)}
+          </p>
+        </div>
+      </div>
+    );
   };
 
   const MetricCard = ({ title, value, subtitle, trend }) => (
@@ -47,7 +99,7 @@ export default function AdminAnalytics() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
       </div>
     );
   }
@@ -62,11 +114,50 @@ export default function AdminAnalytics() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Analytics & Reports</h1>
-        <p className="text-gray-600">Track your business performance and insights</p>
+      {/* Header with Trend Selector */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Analytics & Reports</h1>
+          <p className="text-gray-600">Track your business performance and insights</p>
+        </div>
+        
+        {/* NEW: Trend Selector */}
+        <div className="flex bg-gray-100 rounded-lg p-1">
+          {trendOptions.map(option => (
+            <button
+              key={option.value}
+              onClick={() => setTrendPeriod(option.value)}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                trendPeriod === option.value
+                  ? 'bg-orange-600 text-white shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {option.icon} {option.label}
+            </button>
+          ))}
+        </div>
       </div>
+
+      {/* Period Summary */}
+      <Card className="p-4 bg-orange-50 border border-orange-200">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="text-orange-600">
+              📈 <span className="font-semibold">
+                {trendPeriod === 'total' ? 'All Time' : 
+                 trendPeriod === 'weekly' ? 'Last 7 Days' : 'Last 30 Days'} Performance
+              </span>
+            </div>
+            <div className="text-sm text-gray-600">
+              Data granularity: {analyticsData.granularity || 'daily'}
+            </div>
+          </div>
+          <div className="text-sm text-orange-600">
+            {analyticsData.salesData?.length || 0} data points available
+          </div>
+        </div>
+      </Card>
 
       {/* Sales Overview */}
       <div>
@@ -111,34 +202,36 @@ export default function AdminAnalytics() {
         </div>
       </div>
 
-      {/* Charts Placeholder */}
+      {/* Charts Section - Enhanced */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4">Monthly Sales</h3>
-          <div className="h-64 bg-gray-100 rounded-lg flex flex-col items-center justify-center">
-            <p className="text-gray-500 mb-2">📊 Monthly Sales Chart</p>
-            {analyticsData.monthly.length > 0 ? (
-              <div className="text-center">
-                <p className="text-sm text-gray-600">
-                  {analyticsData.monthly.length} months of data available
-                </p>
-              </div>
-            ) : (
-              <p className="text-sm text-gray-400">No sales data yet</p>
-            )}
-          </div>
+          <h3 className="text-lg font-semibold mb-4 flex items-center justify-between">
+            Sales Revenue Trend
+            <span className="text-sm text-gray-500 font-normal">
+              {analyticsData.trends?.[trendPeriod]?.revenue ? 
+                `$${analyticsData.trends[trendPeriod].revenue.toFixed(2)}` : '$0'
+              }
+            </span>
+          </h3>
+          <ChartPlaceholder 
+            title="Sales Revenue"
+            data={analyticsData.salesData}
+            emptyMessage="No sales data available yet. Start selling to see trends!"
+          />
         </Card>
 
         <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4">Orders Trend</h3>
-          <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
-            <div className="text-center">
-              <p className="text-gray-500 mb-2">📈 Orders Trend</p>
-              <p className="text-sm text-gray-600">
-                Total: {analyticsData.ordersCount} orders
-              </p>
-            </div>
-          </div>
+          <h3 className="text-lg font-semibold mb-4 flex items-center justify-between">
+            Orders Trend
+            <span className="text-sm text-gray-500 font-normal">
+              {analyticsData.trends?.[trendPeriod]?.orders || 0} orders
+            </span>
+          </h3>
+          <ChartPlaceholder 
+            title="Order Count"
+            data={analyticsData.salesData?.map(item => ({...item, revenue: item.orderCount}))}
+            emptyMessage="No order data available yet. First orders will appear here!"
+          />
         </Card>
       </div>
 

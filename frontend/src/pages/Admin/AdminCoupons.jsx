@@ -8,6 +8,7 @@ export default function AdminCoupons() {
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingCoupon, setEditingCoupon] = useState(null); // NEW: Edit state
   const [newCoupon, setNewCoupon] = useState({
     code: '',
     discount: '',
@@ -43,21 +44,60 @@ export default function AdminCoupons() {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
-      const response = await api.post('/admin/coupons', newCoupon, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
       
-      if (response.data.success) {
-        setCoupons([response.data.data, ...coupons]);
-        setNewCoupon({
-          code: '', discount: '', type: 'percentage', 
-          minAmount: '', maxDiscount: '', expiryDate: '', usageLimit: ''
+      if (editingCoupon) {
+        // UPDATE existing coupon
+        const response = await api.put(`/admin/coupons/${editingCoupon._id}`, newCoupon, {
+          headers: { Authorization: `Bearer ${token}` }
         });
-        setShowAddForm(false);
+        
+        if (response.data.success) {
+          setCoupons(coupons.map(coupon => 
+            coupon._id === editingCoupon._id ? response.data.data : coupon
+          ));
+          setEditingCoupon(null);
+          resetForm();
+          alert('Coupon updated successfully!');
+        }
+      } else {
+        // CREATE new coupon
+        const response = await api.post('/admin/coupons', newCoupon, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.data.success) {
+          setCoupons([response.data.data, ...coupons]);
+          resetForm();
+          alert('Coupon created successfully!');
+        }
       }
     } catch (error) {
-      console.error('Failed to add coupon:', error);
+      console.error('Failed to save coupon:', error);
+      alert(error.response?.data?.msg || 'Failed to save coupon');
     }
+  };
+
+  const resetForm = () => {
+    setNewCoupon({
+      code: '', discount: '', type: 'percentage', 
+      minAmount: '', maxDiscount: '', expiryDate: '', usageLimit: ''
+    });
+    setShowAddForm(false);
+    setEditingCoupon(null);
+  };
+
+  const startEdit = (coupon) => {
+    setEditingCoupon(coupon);
+    setNewCoupon({
+      code: coupon.code,
+      discount: coupon.discount.toString(),
+      type: coupon.type,
+      minAmount: coupon.minAmount ? coupon.minAmount.toString() : '',
+      maxDiscount: coupon.maxDiscount ? coupon.maxDiscount.toString() : '',
+      expiryDate: coupon.expiryDate ? new Date(coupon.expiryDate).toISOString().split('T')[0] : '',
+      usageLimit: coupon.usageLimit ? coupon.usageLimit.toString() : ''
+    });
+    setShowAddForm(true);
   };
 
   const handleInputChange = (e) => {
@@ -132,10 +172,12 @@ export default function AdminCoupons() {
         </Button>
       </div>
 
-      {/* Add Coupon Form */}
+      {/* Add/Edit Coupon Form */}
       {showAddForm && (
         <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4">Create New Coupon</h3>
+          <h3 className="text-lg font-semibold mb-4">
+            {editingCoupon ? 'Edit Coupon' : 'Create New Coupon'}
+          </h3>
           <form onSubmit={handleAddCoupon} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               label="Coupon Code"
@@ -211,11 +253,11 @@ export default function AdminCoupons() {
 
             <div className="md:col-span-2 flex gap-4">
               <Button type="submit" className="bg-green-600 text-white hover:bg-green-700">
-                Create Coupon
+                {editingCoupon ? 'Update Coupon' : 'Create Coupon'}
               </Button>
               <Button
                 type="button"
-                onClick={() => setShowAddForm(false)}
+                onClick={resetForm}
                 className="bg-gray-600 text-white hover:bg-gray-700"
               >
                 Cancel
@@ -273,7 +315,10 @@ export default function AdminCoupons() {
                 >
                   {coupon.isActive ? 'Deactivate' : 'Activate'}
                 </Button>
-                <Button className="bg-blue-600 text-white text-sm px-3 py-1">
+                <Button
+                  onClick={() => startEdit(coupon)}
+                  className="bg-blue-600 text-white text-sm px-3 py-1 hover:bg-blue-700"
+                >
                   Edit
                 </Button>
                 <Button 
