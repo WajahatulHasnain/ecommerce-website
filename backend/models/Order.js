@@ -5,7 +5,7 @@ const orderSchema = new mongoose.Schema({
   orderNumber: {
     type: Number,
     unique: true,
-    required: true
+    required: false // Remove required validation since pre-save hook will set it
   },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -90,7 +90,9 @@ orderSchema.pre('save', async function(next) {
   if (this.isNew && !this.orderNumber) {
     try {
       this.orderNumber = await Counter.getNextSequence('order');
+      console.log(`📋 Generated order number: ${this.orderNumber} for order ${this._id}`);
     } catch (error) {
+      console.error('❌ Error generating order number:', error);
       return next(error);
     }
   }

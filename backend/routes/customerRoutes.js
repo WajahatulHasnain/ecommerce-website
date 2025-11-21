@@ -323,7 +323,7 @@ router.post("/purchase", async (req, res) => {
     console.log('💳 Order totals:', { subtotal: calculatedTotal, discount: appliedDiscount, finalTotal: totalPrice });
     
     // Create order
-    console.log('📋 Creating order...');
+    console.log('📋 Creating order without orderNumber (will be auto-generated)...');
     
     const order = new Order({
       userId,
@@ -350,19 +350,19 @@ router.post("/purchase", async (req, res) => {
     });
     
     await order.save();
-    console.log('✅ Order created successfully:', order._id);
+    console.log('✅ Order created successfully:', order._id, 'with order number:', order.orderNumber);
     
     // Populate user data for response
     await order.populate('userId', 'name email');
     await order.populate('products.productId', 'title imageUrl category');
     
-    console.log('🎉 Purchase completed successfully');
+    console.log('🎉 Purchase completed successfully for order:', order.displayOrderId);
     
     res.status(201).json({
       success: true,
       data: {
         orderId: order._id,
-        orderNumber: order._id.toString().slice(-8).toUpperCase(),
+        orderNumber: order.displayOrderId, // Use the virtual field for display
         totalPrice: order.totalPrice,
         products: order.products,
         customerInfo: order.customerInfo,

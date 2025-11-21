@@ -98,7 +98,7 @@ export default function AdminSettings() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
       </div>
     );
   }
@@ -106,9 +106,9 @@ export default function AdminSettings() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg p-6">
+      <div className="bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-lg p-6">
         <h1 className="text-3xl font-bold mb-2">🏪 Store Configuration</h1>
-        <p className="text-blue-100">Configure your store settings, currency, and pricing</p>
+        <p className="text-orange-100">Configure your store settings, currency, and pricing</p>
       </div>
 
       {/* Store Settings Form */}
@@ -142,7 +142,7 @@ export default function AdminSettings() {
                   value={storeSettings.storeDescription}
                   onChange={handleStoreChange}
                   rows="3"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   placeholder="Describe your store..."
                 />
               </div>
@@ -150,7 +150,7 @@ export default function AdminSettings() {
           </div>
 
           {/* Currency & Financial Settings Section */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-200">
+          <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg p-6 border border-orange-200">
             <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
               💰 Currency & Financial Settings
             </h4>
@@ -163,7 +163,7 @@ export default function AdminSettings() {
                   name="currency"
                   value={storeSettings.currency}
                   onChange={handleStoreChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   required
                 >
                   {currencies.map(curr => (

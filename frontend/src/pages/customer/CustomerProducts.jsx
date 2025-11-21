@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom'; // FIXED: Added for URL parameter handling
 import api from '../../utils/api';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -7,6 +8,7 @@ import { useSettings } from '../../context/SettingsContext';
 
 export default function CustomerProducts() {
   const { formatPrice, getCurrencySymbol } = useSettings();
+  const location = useLocation(); // FIXED: Added for URL parameter handling
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(null);
@@ -36,6 +38,18 @@ export default function CustomerProducts() {
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponError, setCouponError] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
+
+  // FIXED: Handle URL search parameters
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const searchQuery = urlParams.get('search');
+    if (searchQuery) {
+      setFilters(prev => ({
+        ...prev,
+        search: searchQuery
+      }));
+    }
+  }, [location.search]);
 
   useEffect(() => {
     fetchProducts();

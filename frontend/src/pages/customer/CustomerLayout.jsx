@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 
 export default function CustomerLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -20,6 +21,13 @@ export default function CustomerLayout() {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      navigate(`/customer/products?search=${encodeURIComponent(searchTerm.trim())}`);
+    }
   };
 
   return (
@@ -40,8 +48,8 @@ export default function CustomerLayout() {
                       key={item.name}
                       to={item.href}
                       className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
-                        isActive 
-                          ? 'bg-blue-100 text-blue-700' 
+                        isActive
+                          ? 'bg-orange-100 text-orange-700'
                           : 'text-gray-700 hover:bg-gray-100'
                       }`}
                     >
@@ -56,11 +64,15 @@ export default function CustomerLayout() {
             <div className="flex items-center space-x-4">
               {/* Search Bar */}
               <div className="hidden sm:block">
-                <input
-                  type="text"
-                  placeholder="Search products..."
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <form onSubmit={handleSearchSubmit}>
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search products..."
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </form>
               </div>
 
               {/* User Menu */}

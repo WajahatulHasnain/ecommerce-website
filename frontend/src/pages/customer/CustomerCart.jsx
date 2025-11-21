@@ -225,12 +225,12 @@ export default function CustomerCart() {
       {cartItems.length > 0 ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Cart Items */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="lg:col-span-2 space-y-4">
+            <div className="space-y-3">
               {cartItems.map((item) => (
-                <div key={item._id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 group">
-                  {/* Full-height product image with gradient overlay */}
-                  <div className="relative w-full h-80 bg-gray-100 overflow-hidden">
+                <div key={item._id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 group flex">
+                  {/* Compact product image */}
+                  <div className="relative w-32 h-32 bg-gray-100 overflow-hidden flex-shrink-0">
                   {item.productId.imageUrl ? (
                     <>
                       <img
@@ -243,7 +243,7 @@ export default function CustomerCart() {
                     </>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-200">
-                      <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
                       </svg>
                     </div>
@@ -252,25 +252,23 @@ export default function CustomerCart() {
                   {/* Remove Button - Top Right - Always Visible */}
                   <button
                     onClick={() => removeItem(item.productId._id)}
-                    className="absolute top-3 right-3 p-2 rounded-full backdrop-blur-md bg-red-500/90 text-white hover:bg-red-600 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-110 z-20"
-                  >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    className="absolute top-2 right-2 p-1 rounded-full backdrop-blur-md bg-red-500/90 text-white hover:bg-red-600 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-110 z-20">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                     </svg>
                   </button>
                   
                   {/* Quantity Controls - Top Left - Always Visible */}
-                  <div className="absolute top-3 left-3 flex items-center space-x-2 backdrop-blur-md bg-white/90 rounded-full px-3 py-2 shadow-lg z-20">
+                  <div className="absolute top-2 left-2 flex items-center space-x-1 backdrop-blur-md bg-white/90 rounded-full px-2 py-1 shadow-lg z-20">
                     <button
                       onClick={() => updateQuantity(item.productId._id, item.quantity - 1)}
-                      className="w-6 h-6 bg-gray-200 text-gray-700 text-sm hover:bg-gray-300 rounded-full flex items-center justify-center font-bold"
-                    >
+                      className="w-5 h-5 bg-gray-200 text-gray-700 text-xs hover:bg-gray-300 rounded-full flex items-center justify-center font-bold">
                       -
                     </button>
-                    <span className="w-8 text-center font-bold text-gray-800">{item.quantity}</span>
+                    <span className="w-6 text-center font-bold text-gray-800 text-xs">{item.quantity}</span>
                     <button
                       onClick={() => updateQuantity(item.productId._id, item.quantity + 1)}
-                      className="w-6 h-6 bg-gray-200 text-gray-700 text-sm hover:bg-gray-300 rounded-full flex items-center justify-center font-bold"
+                      className="w-5 h-5 bg-gray-200 text-gray-700 text-xs hover:bg-gray-300 rounded-full flex items-center justify-center font-bold"
                       disabled={item.quantity >= item.productId.stock}
                     >
                       +
@@ -279,46 +277,46 @@ export default function CustomerCart() {
                   
                   {/* Discount badge */}
                   {item.productId.discount?.enabled && item.productId.finalPrice < item.productId.price && (
-                    <div className="absolute top-3 right-16 bg-red-500 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow-lg backdrop-blur-sm">
+                    <div className="absolute top-2 right-8 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold shadow-lg backdrop-blur-sm">
                       {item.productId.discount.type === 'percentage' 
                         ? `${item.productId.discount.value}% OFF`
                         : `$${item.productId.discount.value} OFF`
                       }
                     </div>
                   )}
+                  </div>
                   
-                  {/* Product Title - Bottom with transparency */}
-                  <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-                    <h3 className="font-semibold text-white text-base mb-3 line-clamp-2 drop-shadow-lg">
-                      {item.productId.title}
-                    </h3>
-                    
-                    {/* Price and Stock Row */}
-                    <div className="flex items-end justify-between">
+                  {/* Product details - right side */}
+                  <div className="flex-1 p-4 flex flex-col justify-between">
+                    <div>
+                      <h3 className="font-semibold text-gray-900 text-base mb-2 line-clamp-2">{item.productId.title}</h3>
+                      
                       {/* Price Display */}
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 mb-2">
                         {item.productId.discount?.enabled && item.productId.finalPrice < item.productId.price ? (
                           <>
-                            <span className="text-gray-300 text-sm line-through">
+                            <span className="text-gray-400 text-sm line-through">
                               {formatPrice(item.productId.price * item.quantity)}
                             </span>
-                            <span className="text-white text-2xl font-bold drop-shadow-lg">
+                            <span className="text-orange-600 text-lg font-bold">
                               {formatPrice(item.productId.finalPrice * item.quantity)}
                             </span>
                           </>
                         ) : (
-                          <span className="text-white text-2xl font-bold drop-shadow-lg">
+                          <span className="text-gray-900 text-lg font-bold">
                             {formatPrice(item.productId.price * item.quantity)}
                           </span>
                         )}
                       </div>
-                      
+                    </div>
+                    
+                    <div className="flex justify-between items-center">
                       {/* Stock Badge */}
-                      <span className="px-3 py-1 text-xs font-bold rounded-full backdrop-blur-md bg-green-500/90 text-white shadow-lg">
+                      <span className="px-2 py-1 text-xs font-bold rounded-full bg-green-500/90 text-white shadow">
                         {item.productId.stock} in stock
                       </span>
+                      <span className="text-sm text-gray-500">Qty: {item.quantity}</span>
                     </div>
-                  </div>
                   </div>
                 </div>
               ))}
@@ -469,7 +467,7 @@ export default function CustomerCart() {
                       type="text"
                       value={customerInfo.name}
                       onChange={(e) => setCustomerInfo(prev => ({ ...prev, name: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                       placeholder="Enter your full name"
                       required
                     />
@@ -481,7 +479,7 @@ export default function CustomerCart() {
                       type="email"
                       value={customerInfo.email}
                       onChange={(e) => setCustomerInfo(prev => ({ ...prev, email: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                       placeholder="Enter your email"
                       required
                     />
@@ -494,7 +492,7 @@ export default function CustomerCart() {
                     type="tel"
                     value={customerInfo.phone}
                     onChange={(e) => setCustomerInfo(prev => ({ ...prev, phone: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                     placeholder="Enter your phone number"
                     required
                   />
@@ -509,7 +507,7 @@ export default function CustomerCart() {
                       ...prev,
                       address: { ...prev.address, street: e.target.value }
                     }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                     placeholder="Enter your street address"
                     required
                   />
@@ -525,7 +523,7 @@ export default function CustomerCart() {
                         ...prev,
                         address: { ...prev.address, city: e.target.value }
                       }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                       placeholder="City"
                       required
                     />
@@ -540,7 +538,7 @@ export default function CustomerCart() {
                         ...prev,
                         address: { ...prev.address, state: e.target.value }
                       }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                       placeholder="State"
                       required
                     />
@@ -557,7 +555,7 @@ export default function CustomerCart() {
                         ...prev,
                         address: { ...prev.address, zipCode: e.target.value }
                       }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                       placeholder="ZIP Code"
                     />
                   </div>
@@ -571,7 +569,7 @@ export default function CustomerCart() {
                         ...prev,
                         address: { ...prev.address, country: e.target.value }
                       }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                       placeholder="Country"
                     />
                   </div>
