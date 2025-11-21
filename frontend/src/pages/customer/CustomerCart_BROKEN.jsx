@@ -211,7 +211,9 @@ export default function CustomerCart() {
   }
 
   const subtotal = calculateSubtotal();
-  const finalTotal = Math.max(0, subtotal - couponDiscount);
+  const tax = subtotal * 0.1; // 10% tax
+  const shipping = subtotal > 50 ? 0 : 5.99; // Free shipping over $50
+  const total = Math.max(0, subtotal - couponDiscount) + tax + shipping;
 
   return (
     <div className="space-y-6">
@@ -222,205 +224,206 @@ export default function CustomerCart() {
 
       {cartItems.length > 0 ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left: Cart Items Grid (2 columns) */}
-          <div className="lg:col-span-2">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {/* Cart Items */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="space-y-4">
               {cartItems.map((item) => (
-                <div key={item._id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 group">
-                  {/* Full-height product image with gradient overlay */}
-                  <div className="relative w-full h-80 bg-gray-100 overflow-hidden">
-                    {item.productId.imageUrl ? (
-                      <>
+                <div key={item._id} className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 p-6">
+                  <div className="flex gap-4">
+                    {/* Product Image - 120x120 */}
+                    <div className="relative w-30 h-30 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0">
+                      {item.productId.imageUrl ? (
                         <img
                           src={item.productId.imageUrl}
                           alt={item.productId.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          className="w-full h-full object-cover"
                         />
-                        {/* Dark gradient overlay for better text readability */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
-                      </>
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-200">
-                        <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                    )}
-                    
-                    {/* Remove from Cart Button - Top Right - Always Visible */}
-                    <button
-                      onClick={() => removeItem(item.productId._id)}
-                      className="absolute top-3 right-3 p-2 rounded-full backdrop-blur-md bg-red-500/90 text-white hover:bg-red-600 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-110 z-20"
-                    >
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                    
-                    {/* Quantity Controls - Top Left - Always Visible */}
-                    <div className="absolute top-3 left-3 flex items-center space-x-1 backdrop-blur-md bg-white/90 rounded-full px-3 py-2 shadow-lg z-20">
-                      <button
-                        onClick={() => updateQuantity(item.productId._id, item.quantity - 1)}
-                        className="w-6 h-6 bg-gray-200 text-gray-700 text-sm hover:bg-gray-300 rounded-full flex items-center justify-center font-bold">
-                        −
-                      </button>
-                      <span className="w-8 text-center font-bold text-gray-800 text-sm">{item.quantity}</span>
-                      <button
-                        onClick={() => updateQuantity(item.productId._id, item.quantity + 1)}
-                        className="w-6 h-6 bg-orange-500 text-white text-sm hover:bg-orange-600 rounded-full flex items-center justify-center font-bold"
-                        disabled={item.quantity >= item.productId.stock}
-                      >
-                        +
-                      </button>
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-300">
+                          <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
                     </div>
                     
-                    {/* Discount badge - Top Center */}
-                    {item.productId.discount?.enabled && item.productId.finalPrice < item.productId.price && (
-                      <div className="absolute top-3 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow-lg backdrop-blur-sm">
-                        {item.productId.discount.type === 'percentage' 
-                          ? `${item.productId.discount.value}% OFF`
-                          : `$${item.productId.discount.value} OFF`
-                        }
+                    {/* Product Details */}
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h3 className="font-semibold text-gray-900 text-lg mb-1">{item.productId.title}</h3>
+                          <p className="text-sm text-gray-500">{item.productId.stock} in stock</p>
+                        </div>
+                        <button
+                          onClick={() => removeItem(item.productId._id)}
+                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clipRule="evenodd" />
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                          </svg>
+                        </button>
                       </div>
-                    )}
-                    
-                    {/* Product Title and Price - Bottom with transparency */}
-                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-                      <h3 className="font-semibold text-white text-base mb-3 line-clamp-2 drop-shadow-lg">
-                        {item.productId.title}
-                      </h3>
                       
-                      {/* Price and Stock Row */}
-                      <div className="flex items-end justify-between">
-                        {/* Price Display */}
-                        <div className="flex items-center gap-2">
+                      <div className="flex justify-between items-end">
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => updateQuantity(item.productId._id, item.quantity - 1)}
+                            className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 font-semibold transition-colors">
+                            −
+                          </button>
+                          <span className="w-12 text-center font-semibold text-lg">{item.quantity}</span>
+                          <button
+                            onClick={() => updateQuantity(item.productId._id, item.quantity + 1)}
+                            disabled={item.quantity >= item.productId.stock}
+                            className="w-8 h-8 rounded-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-300 text-white flex items-center justify-center font-semibold transition-colors">
+                            +
+                          </button>
+                        </div>
+                        <div className="text-right">
                           {item.productId.discount?.enabled && item.productId.finalPrice < item.productId.price ? (
-                            <>
-                              <span className="text-gray-300 text-sm line-through">
+                            <div>
+                              <div className="text-sm text-gray-400 line-through">
                                 {formatPrice(item.productId.price * item.quantity)}
-                              </span>
-                              <span className="text-white text-2xl font-bold drop-shadow-lg">
+                              </div>
+                              <div className="text-xl font-bold text-orange-600">
                                 {formatPrice(item.productId.finalPrice * item.quantity)}
-                              </span>
-                            </>
+                              </div>
+                            </div>
                           ) : (
-                            <span className="text-white text-2xl font-bold drop-shadow-lg">
+                            <div className="text-xl font-bold text-gray-900">
                               {formatPrice(item.productId.price * item.quantity)}
-                            </span>
+                            </div>
                           )}
                         </div>
-                        
-                        {/* Stock Badge */}
-                        <span className={`px-3 py-1 text-xs font-bold rounded-full backdrop-blur-md ${
-                          item.productId.stock > 0 
-                            ? 'bg-green-500/90 text-white' 
-                            : 'bg-red-500/90 text-white'
-                        } shadow-lg`}>
-                          {item.productId.stock > 0 ? `${item.productId.stock} in stock` : 'Out of Stock'}
-                        </span>
                       </div>
+                    </div>
+                  </div>
+                  
+                  {/* Discount badge */}
+                  {item.productId.discount?.enabled && item.productId.finalPrice < item.productId.price && (
+                    <div className="absolute top-2 right-8 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold shadow-lg backdrop-blur-sm">
+                      {item.productId.discount.type === 'percentage' 
+                        ? `${item.productId.discount.value}% OFF`
+                        : `$${item.productId.discount.value} OFF`
+                      }
+                    </div>
+                  )}
+                  </div>
+                  
+                  {/* Product details - right side */}
+                  <div className="flex-1 p-4 flex flex-col justify-between">
+                    <div>
+                      <h3 className="font-semibold text-gray-900 text-base mb-2 line-clamp-2">{item.productId.title}</h3>
+                      
+                      {/* Price Display */}
+                      <div className="flex items-center gap-2 mb-2">
+                        {item.productId.discount?.enabled && item.productId.finalPrice < item.productId.price ? (
+                          <>
+                            <span className="text-gray-400 text-sm line-through">
+                              {formatPrice(item.productId.price * item.quantity)}
+                            </span>
+                            <span className="text-orange-600 text-lg font-bold">
+                              {formatPrice(item.productId.finalPrice * item.quantity)}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-gray-900 text-lg font-bold">
+                            {formatPrice(item.productId.price * item.quantity)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-between items-center">
+                      {/* Stock Badge */}
+                      <span className="px-2 py-1 text-xs font-bold rounded-full bg-green-500/90 text-white shadow">
+                        {item.productId.stock} in stock
+                      </span>
+                      <span className="text-sm text-gray-500">Qty: {item.quantity}</span>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* Right: Order Summary (Sticky Sidebar) */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-4">
-              <Card className="p-6">
-                <h2 className="text-xl font-bold mb-4">Order Summary</h2>
-                
-                {/* Coupon Section */}
-                <div className="mb-6">
-                  <label className="text-sm font-medium text-gray-700 mb-2 block">
-                    Apply Coupon
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={couponCode}
-                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                      placeholder="Enter coupon code"
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                    />
-                    <Button
-                      onClick={validateCoupon}
-                      className="px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg"
-                    >
-                      Apply
-                    </Button>
-                  </div>
-                  {couponData && (
-                    <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm text-green-700">
-                      ✅ Coupon "{couponData.code}" applied - Save {formatPrice(couponDiscount)}
-                    </div>
-                  )}
-                </div>
-
-                {/* Price Breakdown */}
-                <div className="space-y-3 mb-6 pb-6 border-b border-gray-200">
-                  <div className="flex justify-between text-gray-600">
-                    <span>Subtotal ({cartItems.length} items)</span>
-                    <span>{formatPrice(subtotal)}</span>
-                  </div>
-                  
-                  {couponDiscount > 0 && (
-                    <div className="flex justify-between text-green-600 font-medium">
-                      <span>Discount ({couponData?.code})</span>
-                      <span>-{formatPrice(couponDiscount)}</span>
-                    </div>
-                  )}
-                  
-                  <div className="flex justify-between text-gray-600">
-                    <span>Shipping</span>
-                    <span className="text-green-600 font-medium">Free</span>
-                  </div>
-                </div>
-
-                {/* Total */}
-                <div className="flex justify-between items-center mb-6">
-                  <span className="text-lg font-bold text-gray-900">Total</span>
-                  <span className="text-2xl font-bold text-orange-600">
-                    {formatPrice(finalTotal)}
-                  </span>
-                </div>
-
-                {/* Checkout Button */}
+          </div>          {/* Order Summary - Sticky */}
+          <div className="space-y-4 sticky top-4">
+            {/* Coupon Section */}
+            <Card className="p-4">
+              <h3 className="font-semibold mb-3">Apply Coupon</h3>
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  placeholder="Enter coupon code"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
                 <Button
-                  onClick={() => setShowCheckoutModal(true)}
-                  className="w-full py-4 bg-orange-600 hover:bg-orange-700 text-white text-lg font-semibold rounded-lg transition-colors"
+                  onClick={validateCoupon}
+                  className="bg-orange-600 text-white hover:bg-orange-700"
                 >
-                  Proceed to Checkout
+                  Apply
                 </Button>
+              </div>
+              {couponData && (
+                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+                  ✅ Coupon "{couponData.code}" applied - Save {formatPrice(couponDiscount)}
+                </div>
+              )}
+            </Card>
 
-                <p className="text-xs text-gray-500 text-center mt-4">
-                  Secure checkout · Free shipping on all orders
-                </p>
-              </Card>
-            </div>
+            {/* Order Summary */}
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
+              
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span>Subtotal ({cartItems.length} items)</span>
+                  <span>{formatPrice(subtotal)}</span>
+                </div>
+                {couponDiscount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Coupon Discount</span>
+                    <span>-{formatPrice(couponDiscount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span>Tax ({settings.taxRate}%)</span>
+                  <span>{formatPrice(tax)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Shipping</span>
+                  <span>{shipping === 0 ? 'Free' : formatPrice(shipping)}</span>
+                </div>
+                <hr />
+                <div className="flex justify-between font-bold text-lg">
+                  <span>Total</span>
+                  <span>{formatPrice(total)}</span>
+                </div>
+              </div>
+              
+              <Button
+                onClick={handleCheckout}
+                className="w-full mt-6 bg-orange-600 text-white hover:bg-orange-700 py-4 text-lg font-semibold"
+              >
+                Proceed to Checkout
+              </Button>
+            </Card>
           </div>
         </div>
       ) : (
-        <div className="container mx-auto px-4 py-8">
-          <Card className="p-12 text-center">
-            <div className="max-w-md mx-auto">
-              <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                </svg>
-              </div>
-              <h3 className="text-2xl font-semibold text-gray-900 mb-3">Your cart is empty</h3>
-              <p className="text-gray-500 mb-6">Add some products to get started</p>
-              <Button 
-                onClick={() => navigate('/customer/products')}
-                className="px-8 py-3 bg-orange-600 hover:bg-orange-700 text-white"
-              >
-                Continue Shopping
-              </Button>
-            </div>
-          </Card>
+        <div className="text-center py-16">
+          <svg className="w-24 h-24 mx-auto text-gray-300 mb-4" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
+          </svg>
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">Your cart is empty</h2>
+          <p className="text-gray-600 mb-8">Add some products to get started</p>
+          <Button
+            onClick={() => navigate('/customer/products')}
+            className="bg-orange-600 text-white hover:bg-orange-700 px-8 py-3"
+          >
+            Continue Shopping
+          </Button>
         </div>
       )}
       
@@ -604,7 +607,7 @@ export default function CustomerCart() {
                 <Button
                   onClick={handlePurchase}
                   disabled={processing}
-                  className="flex-1 bg-orange-600 text-white hover:bg-orange-700 py-3"
+                  className="flex-1 bg-green-600 text-white hover:bg-green-700 py-3"
                 >
                   {processing ? 'Processing...' : `Place Order - ${formatPrice(Math.max(0, calculateSubtotal() - couponDiscount))}`}
                 </Button>
