@@ -101,7 +101,10 @@ export default function CustomerCart() {
     
     try {
       const token = localStorage.getItem('token');
-      const response = await api.get(`/customer/coupons/validate/${couponCode}`, {
+      // ✅ Enhanced: Convert coupon to uppercase for case-insensitive validation
+      const normalizedCouponCode = couponCode.trim().toUpperCase();
+      
+      const response = await api.get(`/customer/coupons/validate/${normalizedCouponCode}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -127,6 +130,9 @@ export default function CustomerCart() {
         setCouponData(coupon);
         setCouponDiscount(discount);
         alert(`Coupon applied! You saved ${formatPrice(discount)}`);
+        
+        // ✅ Enhanced: Update the input to show the normalized code
+        setCouponCode(normalizedCouponCode);
       }
     } catch (error) {
       console.error('Coupon validation failed:', error);

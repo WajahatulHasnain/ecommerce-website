@@ -71,11 +71,12 @@ export default function Login() {
       if (res.data.success) {
         login(res.data.token, res.data.user);
         
-        // Redirect based on role
-        const redirectTo = res.data.redirectTo || 
-          (res.data.user.role === 'admin' ? '/admin/dashboard' : '/customer/dashboard');
+        // ✅ Enhanced: Redirect customers to products page instead of dashboard
+        const redirectTo = location.state?.from?.pathname ||
+          (res.data.user.role === 'admin' ? '/admin/dashboard' : '/customer/products');
         
-        navigate(redirectTo);
+        console.log(`✅ Login successful, redirecting ${res.data.user.role} to:`, redirectTo);
+        navigate(redirectTo, { replace: true });
       } else {
         setError(res.data.msg || "Login failed");
       }

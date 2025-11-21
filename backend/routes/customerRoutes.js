@@ -444,18 +444,30 @@ router.put("/profile", async (req, res) => {
       });
     }
     
-    const updateData = { name, email, phone, address };
+    const updateData = { 
+      name, 
+      email: email.toLowerCase(), 
+      phone, 
+      address,
+      lastProfileUpdate: new Date() // ✅ Enhanced: Track update time
+    };
     let updatedUser;
     
     // Update in the appropriate model based on user type
     if (req.user.role === 'customer') {
-      // Check if email is already taken by another customer
+      // ✅ Enhanced: Check if email is already taken by another customer in both collections
       const existingCustomer = await Customer.findOne({ 
         email: email.toLowerCase(), 
         _id: { $ne: req.user._id } 
       });
       
-      if (existingCustomer) {
+      const existingUser = await User.findOne({ 
+        email: email.toLowerCase(), 
+        _id: { $ne: req.user._id },
+        role: 'customer'
+      });
+      
+      if (existingCustomer || existingUser) {
         return res.status(400).json({ 
           success: false, 
           msg: "Email address is already in use" 
@@ -495,11 +507,13 @@ router.put("/profile", async (req, res) => {
       });
     }
     
-    console.log('✅ Profile updated successfully for user:', updatedUser.email);
+    console.log(`✅ Profile updated for ${updatedUser.role}: ${updatedUser.email} at ${new Date().toISOString()}`);
+    
     res.json({ 
       success: true, 
       data: updatedUser,
-      msg: "Profile updated successfully"
+      msg: "Profile updated successfully",
+      timestamp: new Date().toISOString() // ✅ Enhanced: Include update timestamp
     });
     
   } catch (error) {
@@ -655,8 +669,11 @@ router.get("/coupons/validate/:code", async (req, res) => {
     const now = new Date();
     const Coupon = require("../models/Coupon");
     
+    // ✅ Enhanced: Convert to uppercase for case-insensitive comparison
+    const normalizedCode = code.toUpperCase().trim();
+    
     const coupon = await Coupon.findOne({
-      code: code.toUpperCase(),
+      code: normalizedCode, // ✅ Use normalized code
       isActive: true,
       $or: [
         { expiryDate: null },
@@ -673,8 +690,10 @@ router.get("/coupons/validate/:code", async (req, res) => {
       return res.status(400).json({ success: false, msg: "Coupon usage limit exceeded" });
     }
     
+    console.log(`✅ Coupon validated: ${normalizedCode} for customer ${req.user.email}`);
     res.json({ success: true, data: coupon });
   } catch (error) {
+    console.error('Coupon validation error:', error);
     res.status(500).json({ success: false, msg: "Failed to validate coupon" });
   }
 });

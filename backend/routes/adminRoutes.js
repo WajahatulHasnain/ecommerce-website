@@ -259,11 +259,48 @@ router.put("/orders/:id/status", async (req, res) => {
 // Users Management
 router.get("/users", async (req, res) => {
   try {
+    // ✅ Enhanced: Fetch from both Customer and User collections for complete data
+    const Customer = require("../models/Customer");
+    
+    const customers = await Customer.find()
+      .select("-password -resetCode -resetCodeExpiry -resetToken")
+      .lean();
+    
     const users = await User.find({ role: "customer" })
       .select("-password")
-      .sort({ createdAt: -1 });
-    res.json({ success: true, data: users });
+      .lean();
+    
+    // ✅ Enhanced: Combine and normalize data
+    const allCustomers = [
+      ...customers.map(customer => ({
+        ...customer,
+        source: 'customer_collection',
+        lastUpdated: customer.updatedAt
+      })),
+      ...users.map(user => ({
+        ...user,
+        source: 'user_collection',
+        lastUpdated: user.updatedAt
+      }))
+    ];
+    
+    // ✅ Enhanced: Sort by most recently updated
+    allCustomers.sort((a, b) => new Date(b.lastUpdated) - new Date(a.lastUpdated));
+    
+    console.log(`✅ Admin fetched ${allCustomers.length} total customers (${customers.length} from Customer collection, ${users.length} from User collection)`);
+    
+    res.json({
+      success: true,
+      data: allCustomers,
+      meta: {
+        totalCustomers: allCustomers.length,
+        fromCustomerCollection: customers.length,
+        fromUserCollection: users.length,
+        lastSync: new Date().toISOString()
+      }
+    });
   } catch (error) {
+    console.error('Admin users fetch error:', error);
     res.status(500).json({ success: false, msg: "Failed to fetch users" });
   }
 });

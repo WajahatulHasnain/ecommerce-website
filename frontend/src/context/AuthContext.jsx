@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import api from '../utils/api';
 
 const AuthContext = createContext();
 
@@ -14,6 +15,32 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // ✅ Enhanced: Update user function for real-time sync
+  const updateUser = useCallback((updatedData) => {
+    setUser(prev => ({ ...prev, ...updatedData }));
+    // Dispatch event for cross-component communication
+    window.dispatchEvent(new CustomEvent('profileUpdated', { 
+      detail: updatedData 
+    }));
+  }, []);
+
+  // ✅ Enhanced: Fetch complete user profile
+  const fetchUserProfile = useCallback(async (token) => {
+    try {
+      const endpoint = user?.role === 'customer' ? '/customer/profile' : '/admin/profile';
+      const response = await api.get(endpoint, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data.success) {
+        setUser(prev => ({ ...prev, ...response.data.data }));
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      // Don't clear token on profile fetch error - might be temporary network issue
+    }
+  }, [user?.role]);
+
   useEffect(() => {
     const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
     if (token) {
@@ -27,6 +54,11 @@ export const AuthProvider = ({ children }) => {
         
         const decoded = JSON.parse(jsonPayload);
         setUser({ id: decoded.id, role: decoded.role });
+        
+        // ✅ Enhanced: Fetch complete profile after setting basic data
+        setTimeout(() => {
+          fetchUserProfile(token);
+        }, 100);
       } catch (error) {
         console.error('Error decoding token:', error);
         localStorage.removeItem('token');
@@ -34,16 +66,24 @@ export const AuthProvider = ({ children }) => {
       }
     }
     setLoading(false);
-  }, []);
+  }, [fetchUserProfile]);
 
   const login = (token, userData) => {
     localStorage.setItem('token', token);
     setUser(userData);
+    // ✅ Enhanced: Fetch complete profile after login
+    setTimeout(() => {
+      fetchUserProfile(token);
+    }, 100);
   };
 
   const adminLogin = (token, userData) => {
     localStorage.setItem('adminToken', token);
     setUser(userData);
+    // ✅ Enhanced: Fetch complete profile after admin login
+    setTimeout(() => {
+      fetchUserProfile(token);
+    }, 100);
   };
 
   const logout = () => {
@@ -52,12 +92,23 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  // ✅ Enhanced: Refresh profile function
+  const refreshProfile = useCallback(() => {
+    const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+    if (token && user) {
+      fetchUserProfile(token);
+    }
+  }, [fetchUserProfile, user]);
+
   const value = {
     user,
     login,
     adminLogin,
     logout,
-    loading
+    loading,
+    updateUser,        // ✅ New: For real-time updates
+    fetchUserProfile,  // ✅ New: Manual profile refresh
+    refreshProfile     // ✅ New: Quick refresh function
   };
 
   return (

@@ -6,18 +6,18 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 
 export default function CustomerProfile() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth(); // ✅ Enhanced: Added updateUser
   const [loading, setLoading] = useState(false);
   const [profileData, setProfileData] = useState({
     name: user?.name || '',
     email: user?.email || '',
-    phone: '',
+    phone: user?.phone || '',
     address: {
-      street: '',
-      city: '',
-      state: '',
-      zipCode: '',
-      country: ''
+      street: user?.address?.street || '',
+      city: user?.address?.city || '',
+      state: user?.address?.state || '',
+      zipCode: user?.address?.zipCode || '',
+      country: user?.address?.country || ''
     }
   });
 
@@ -30,6 +30,24 @@ export default function CustomerProfile() {
   useEffect(() => {
     fetchProfile();
   }, []);
+
+  // ✅ Enhanced: Sync with user context when it updates
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        name: user.name || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        address: user.address || {
+          street: '',
+          city: '',
+          state: '',
+          zipCode: '',
+          country: ''
+        }
+      });
+    }
+  }, [user]);
 
   const fetchProfile = async () => {
     try {
@@ -87,10 +105,18 @@ export default function CustomerProfile() {
       
       if (response.data.success) {
         alert(response.data.msg || 'Profile updated successfully!');
-        // Update local profile data with the response
+        // ✅ Enhanced: Update local profile data with the response
         setProfileData(prev => ({
           ...prev,
           ...response.data.data
+        }));
+        
+        // ✅ Enhanced: Update AuthContext with new profile data
+        updateUser(response.data.data);
+        
+        // ✅ Enhanced: Dispatch custom event for cross-component communication
+        window.dispatchEvent(new CustomEvent('profileUpdated', {
+          detail: response.data.data
         }));
       }
     } catch (error) {
@@ -133,6 +159,15 @@ export default function CustomerProfile() {
           newPassword: '',
           confirmPassword: ''
         });
+        
+        // ✅ Enhanced: Dispatch password change event for admin real-time tracking
+        window.dispatchEvent(new CustomEvent('passwordChanged', {
+          detail: { 
+            userId: user?.id, 
+            timestamp: new Date().toISOString(),
+            userEmail: user?.email 
+          }
+        }));
       }
     } catch (error) {
       console.error('Failed to update password:', error);
