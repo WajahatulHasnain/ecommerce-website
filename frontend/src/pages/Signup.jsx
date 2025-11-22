@@ -330,11 +330,22 @@ export default function Signup() {
           </form>
         </Card>
 
+        {/* Browse as Guest Option */}
+        <div className="text-center">
+          <Link
+            to="/"
+            className="w-full bg-gradient-to-r from-sage to-sage-dark text-white font-semibold py-3 px-6 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-medium hover:shadow-large flex items-center justify-center space-x-2"
+          >
+            <span>👤</span>
+            <span>Continue as Guest</span>
+          </Link>
+        </div>
+
         {/* Info */}
         <div className="text-center">
           <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 border border-warm-gray-100">
             <p className="text-sm text-warm-gray-600 font-medium">
-              🔒 Secure registration • 🎯 For admin access, contact support
+              🛡️ Secure registration • 🛍️ Start shopping immediately
             </p>
           </div>
         </div>

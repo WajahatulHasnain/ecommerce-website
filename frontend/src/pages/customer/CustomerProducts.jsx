@@ -1,17 +1,23 @@
-import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom'; // FIXED: Added for URL parameter handling
+import { useState, useEffect, useContext } from 'react';
+import { useLocation } from 'react-router-dom';
 import api from '../../utils/api';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { useSettings } from '../../context/SettingsContext';
+import { useAuth } from '../../context/AuthContext';
+import { useGuest } from '../../context/GuestContext';
 
 export default function CustomerProducts() {
   const { formatPrice, getCurrencySymbol } = useSettings();
-  const location = useLocation(); // FIXED: Added for URL parameter handling
+  const { user } = useAuth();
+  const { requireAuth } = useGuest();
+  const location = useLocation();
+  
+  // State management
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [purchasing, setPurchasing] = useState(null);
+  const [purchasing, setPurchasing] = useState(false);
   const [wishlist, setWishlist] = useState([]);
   const [filters, setFilters] = useState({
     search: '',
@@ -22,6 +28,7 @@ export default function CustomerProducts() {
   });
   const [cart, setCart] = useState([]);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
     email: '',
@@ -37,9 +44,8 @@ export default function CustomerProducts() {
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponError, setCouponError] = useState('');
-  const [selectedProduct, setSelectedProduct] = useState(null);
 
-  // FIXED: Handle URL search parameters
+  // Handle URL search parameters
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     const searchQuery = urlParams.get('search');
@@ -51,6 +57,7 @@ export default function CustomerProducts() {
     }
   }, [location.search]);
 
+  // Fetch data when filters change
   useEffect(() => {
     fetchProducts();
     fetchWishlist();
@@ -58,6 +65,7 @@ export default function CustomerProducts() {
 
   const fetchProducts = async () => {
     try {
+      setLoading(true);
       const token = localStorage.getItem('token');
       const params = new URLSearchParams();
       
@@ -68,12 +76,14 @@ export default function CustomerProducts() {
         }
       });
 
-      const response = await api.get(`/customer/products?${params}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      // Use appropriate endpoint for guests or authenticated users
+      const endpoint = user ? '/customer/products' : '/public/products';
+      const headers = user && token ? { Authorization: `Bearer ${token}` } : {};
+      
+      const response = await api.get(`${endpoint}?${params}`, { headers });
       
       if (response.data.success) {
-        let filteredProducts = response.data.data.products;
+        let filteredProducts = response.data.data.products || response.data.data;
         
         // Apply discount filter locally
         if (filters.discount === 'discount') {
@@ -86,12 +96,29 @@ export default function CustomerProducts() {
       }
     } catch (error) {
       console.error('Failed to fetch products:', error);
+      // Fallback for guests
+      if (!user) {
+        try {
+          const response = await api.get('/products');
+          if (response.data.success) {
+            setProducts(response.data.data.products || response.data.data);
+          }
+        } catch (fallbackError) {
+          console.error('Fallback fetch failed:', fallbackError);
+          setProducts([]);
+        }
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const fetchWishlist = async () => {
+    if (!user) {
+      setWishlist([]);
+      return;
+    }
+    
     try {
       const token = localStorage.getItem('token');
       const response = await api.get('/customer/wishlist', {
@@ -103,6 +130,7 @@ export default function CustomerProducts() {
       }
     } catch (error) {
       console.error('Failed to fetch wishlist:', error);
+      setWishlist([]);
     }
   };
 
@@ -114,12 +142,15 @@ export default function CustomerProducts() {
   };
 
   const addToCart = async (product) => {
-    // Use finalPrice if product has active discount, otherwise use original price
+    if (!user) {
+      requireAuth('add items to cart');
+      return;
+    }
+    
     const effectivePrice = product.discount?.type && product.discount?.value > 0 && product.finalPrice < product.price 
       ? product.finalPrice 
       : product.price;
     
-    // First update local cart for immediate purchase flow
     setCart(prev => {
       const existing = prev.find(item => item.productId === product._id);
       if (existing) {
@@ -141,7 +172,6 @@ export default function CustomerProducts() {
       }];
     });
     
-    // Also save to backend cart for persistent storage
     try {
       const token = localStorage.getItem('token');
       await api.post(`/customer/cart/${product._id}`, 
@@ -149,20 +179,9 @@ export default function CustomerProducts() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      // Show success message
-      const toast = document.createElement('div');
-      toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-      toast.textContent = `${product.title} added to cart!`;
-      document.body.appendChild(toast);
-      setTimeout(() => {
-        if (document.body.contains(toast)) {
-          document.body.removeChild(toast);
-        }
-      }, 3000);
-      
+      showToast(`${product.title} added to cart!`, 'success');
     } catch (error) {
       console.error('Failed to save to cart:', error);
-      // Don't show error to user as local cart still works
     }
   };
 
@@ -185,23 +204,58 @@ export default function CustomerProducts() {
     );
   };
 
+  const validateCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponError('Please enter a coupon code');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await api.get(`/customer/coupons/validate/${couponCode}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.data.success) {
+        const coupon = response.data.data;
+        const subtotal = getTotalPrice();
+        
+        if (coupon.minAmount && subtotal < coupon.minAmount) {
+          setCouponError(`Minimum order amount $${coupon.minAmount} required`);
+          return;
+        }
+
+        setAppliedCoupon(coupon);
+        setCouponError('');
+        showToast(`Coupon applied! You save ${coupon.type === 'percentage' ? coupon.discount + '%' : '$' + coupon.discount}`, 'success');
+      }
+    } catch (error) {
+      setCouponError(error.response?.data?.msg || 'Invalid coupon code');
+      setAppliedCoupon(null);
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode('');
+    setCouponError('');
+  };
+
   const handlePurchase = async () => {
     if (cart.length === 0) {
-      alert('Cart is empty');
+      showToast('Cart is empty', 'error');
       return;
     }
     
-    // Validate customer info
     if (!customerInfo.name?.trim() || !customerInfo.email?.trim() || !customerInfo.phone?.trim() || 
         !customerInfo.address.street?.trim() || !customerInfo.address.city?.trim()) {
-      alert('Please fill in all required customer information (Name, Email, Phone, Street Address, and City)');
+      showToast('Please fill in all required customer information', 'error');
       return;
     }
     
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(customerInfo.email)) {
-      alert('Please enter a valid email address');
+      showToast('Please enter a valid email address', 'error');
       return;
     }
 
@@ -210,15 +264,11 @@ export default function CustomerProducts() {
       const token = localStorage.getItem('token');
       
       if (!token) {
-        alert('Please log in to complete your purchase');
-        setPurchasing(false);
+        showToast('Please log in to complete your purchase', 'error');
         return;
       }
       
-      // Calculate subtotal
       const subtotal = cart.reduce((total, item) => total + (item.price * item.qty), 0);
-      
-      // Apply coupon discount if available
       let discount = 0;
       let finalTotal = subtotal;
       
@@ -255,7 +305,7 @@ export default function CustomerProducts() {
       });
 
       if (response.data.success) {
-        alert('🎉 Order placed successfully! Thank you for your purchase.');
+        showToast('🎉 Order placed successfully! Thank you for your purchase.', 'success');
         setCart([]);
         setAppliedCoupon(null);
         setCouponCode('');
@@ -266,64 +316,43 @@ export default function CustomerProducts() {
           address: { street: '', city: '', state: '', zipCode: '', country: '' }
         });
         setShowPurchaseModal(false);
-        fetchProducts(); // Refresh products to update stock
+        fetchProducts();
       } else {
-        alert('Order failed: ' + (response.data.msg || 'Unknown error'));
+        showToast('Order failed: ' + (response.data.msg || 'Unknown error'), 'error');
       }
     } catch (error) {
       console.error('Purchase error:', error);
       const errorMessage = error.response?.data?.msg || error.message || 'Purchase failed. Please try again.';
-      alert('❌ Purchase Error: ' + errorMessage);
+      showToast('❌ Purchase Error: ' + errorMessage, 'error');
     } finally {
       setPurchasing(false);
     }
   };
 
-  const validateCoupon = async () => {
-    if (!couponCode.trim()) {
-      setCouponError('Please enter a coupon code');
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem('token');
-      const response = await api.get(`/customer/coupons/validate/${couponCode}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (response.data.success) {
-        const coupon = response.data.data;
-        const subtotal = getTotalPrice();
-        
-        // Check minimum amount requirement
-        if (coupon.minAmount && subtotal < coupon.minAmount) {
-          setCouponError(`Minimum order amount $${coupon.minAmount} required`);
-          return;
-        }
-
-        setAppliedCoupon(coupon);
-        setCouponError('');
-        alert(`Coupon applied! You save ${coupon.type === 'percentage' ? coupon.discount + '%' : '$' + coupon.discount}`);
+  const showToast = (message, type = 'info') => {
+    const toast = document.createElement('div');
+    const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+    toast.className = `fixed top-4 right-4 ${bgColor} text-white px-4 py-2 rounded-lg shadow-lg z-50`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+      if (document.body.contains(toast)) {
+        document.body.removeChild(toast);
       }
-    } catch (error) {
-      setCouponError(error.response?.data?.msg || 'Invalid coupon code');
-      setAppliedCoupon(null);
-    }
-  };
-
-  const removeCoupon = () => {
-    setAppliedCoupon(null);
-    setCouponCode('');
-    setCouponError('');
+    }, 3000);
   };
 
   const toggleWishlist = async (productId) => {
+    if (!user) {
+      requireAuth('manage your wishlist');
+      return;
+    }
+    
     try {
       const token = localStorage.getItem('token');
       const isInWishlist = wishlist.includes(productId);
 
       if (isInWishlist) {
-        // Remove from wishlist
         const response = await api.delete(`/customer/wishlist/${productId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -332,7 +361,6 @@ export default function CustomerProducts() {
           setWishlist(prev => prev.filter(id => id !== productId));
         }
       } else {
-        // Add to wishlist
         const response = await api.post(`/customer/wishlist/${productId}`, {}, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -343,7 +371,7 @@ export default function CustomerProducts() {
       }
     } catch (error) {
       console.error('Failed to toggle wishlist:', error);
-      alert('Failed to update wishlist');
+      showToast('Failed to update wishlist', 'error');
     }
   };
 
@@ -387,606 +415,739 @@ export default function CustomerProducts() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Products</h1>
-        <p className="text-gray-600">Discover amazing products</p>
-      </div>
-
-      {/* Filters */}
-      <Card className="p-4">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <Input
-            placeholder="Search products..."
-            name="search"
-            value={filters.search}
-            onChange={handleFilterChange}
-          />
-          
-          <select
-            name="category"
-            value={filters.category}
-            onChange={handleFilterChange}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">All Categories</option>
-            <option value="electronics">Electronics</option>
-            <option value="clothing">Clothing</option>
-            <option value="home">Home & Garden</option>
-            <option value="sports">Sports & Fitness</option>
-            <option value="books">Books</option>
-            <option value="beauty">Beauty & Personal Care</option>
-            <option value="other">Other</option>
-          </select>
-          
-          <select
-            name="discount"
-            value={filters.discount}
-            onChange={handleFilterChange}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-          >
-            <option value="all">All Products</option>
-            <option value="discount">🏷️ On Discount</option>
-          </select>
-          
-          <Input
-            placeholder="Min Price"
-            name="minPrice"
-            type="number"
-            value={filters.minPrice}
-            onChange={handleFilterChange}
-          />
-          
-          <Input
-            placeholder="Max Price"
-            name="maxPrice"
-            type="number"
-            value={filters.maxPrice}
-            onChange={handleFilterChange}
-          />
-        </div>
-      </Card>
-
-      {/* Cart Summary */}
-      {cart.length > 0 && (
-        <Card className="p-4 bg-blue-50 border-blue-200">
-          <div className="flex justify-between items-center">
-            <div>
-              <span className="font-medium">
-                Cart: {cart.length} item(s)
-              </span>
-              {appliedCoupon && (
-                <div className="text-sm text-green-600 mt-1">
-                  Coupon "{appliedCoupon.code}" applied!
-                </div>
-              )}
-            </div>
-            <div className="text-right">
-              {appliedCoupon ? (
-                <div>
-                  <div className="text-sm text-gray-500 line-through">
-                    {formatPrice(getTotalPrice())}
-                  </div>
-                  <div className="font-bold text-green-600">
-                    {formatPrice(getFinalTotal())}
-                  </div>
-                </div>
-              ) : (
-                  <span className="font-medium">{formatPrice(getTotalPrice())}</span>
-              )}
-            </div>
-            <Button 
-              onClick={() => setShowPurchaseModal(true)}
-              className="bg-green-600 text-white hover:bg-green-700 ml-4"
-            >
-              Proceed to Checkout
-            </Button>
+    <div className="w-full min-h-screen bg-warm-white">
+      <div className="w-full max-w-none px-4 sm:px-6 lg:px-8 py-6">
+        {/* Guest welcome message only for non-logged in users on home page */}
+        {!user && location.pathname === '/' && (
+          <div className="mb-6 p-6 bg-warm-cream border border-warm-gray-200 rounded-2xl">
+            <p className="text-warm-gray-800">
+              👋 <strong>Welcome Guest!</strong> You can browse all products. 
+              <a href="/auth" className="text-etsy-orange hover:text-etsy-orange-dark underline ml-1">Sign in</a> to add items to cart and make purchases.
+            </p>
           </div>
-        </Card>
-      )}
+        )}
 
-      {/* Products Grid */}
-      {loading ? (
-        <div className="text-center py-8">Loading products...</div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {products.map(product => (
-            <div key={product._id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 group">
-              {/* Full-height product image with gradient overlay */}
-              <div className="relative w-full h-80 bg-gray-100 overflow-hidden">
-                {product.imageUrl ? (
-                  <>
-                    <img
-                      src={product.imageUrl}
-                      alt={product.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    {/* Dark gradient overlay for better text readability */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
-                  </>
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-200">
-                    <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                )}
-                
-                {/* Wishlist Heart Button - Top Right */}
+        {/* Enhanced Search & Filters */}
+        <Card className="card-primary p-6 mb-6">
+          <h3 className="text-lg font-semibold text-warm-gray-900 mb-6">
+            Search & Filters
+          </h3>
+          
+          {/* Main Search Bar */}
+          <div className="mb-6">
+            <div className="relative max-w-4xl mx-auto">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-warm-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m21 21-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                name="search"
+                value={filters.search}
+                onChange={handleFilterChange}
+                placeholder="Search for products, categories, brands..."
+                className="w-full pl-12 pr-4 py-4 text-lg border-2 border-warm-gray-200 rounded-2xl focus:ring-2 focus:ring-etsy-orange focus:border-etsy-orange transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+              />
+              {filters.search && (
                 <button
-                  onClick={() => toggleWishlist(product._id)}
-                  className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-md transition-all duration-200 z-20 ${
-                    wishlist.includes(product._id)
-                      ? 'bg-red-500/90 text-white scale-110'
-                      : 'bg-white/80 text-gray-600 hover:text-red-500 hover:bg-white/95'
-                  } shadow-lg hover:shadow-xl hover:scale-110`}
+                  onClick={() => setFilters(prev => ({ ...prev, search: '' }))}
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-warm-gray-400 hover:text-etsy-orange"
                 >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
-                
-                {/* Discount badge - Top Left */}
-                {product.discount?.type && product.discount.value > 0 && (
-                  <div className="absolute top-3 left-3 bg-red-500 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow-lg backdrop-blur-sm">
-                    {product.discount.type === 'percentage' 
-                      ? `${product.discount.value}% OFF`
-                      : `$${product.discount.value} OFF`
-                    }
-                  </div>
-                )}
-                
-                {/* Product Title - Bottom with transparency */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-                  <h3 className="font-semibold text-white text-base mb-3 line-clamp-2 drop-shadow-lg">
-                    {product.title}
-                  </h3>
-                  
-                  {/* Price and Stock Row */}
-                  <div className="flex items-end justify-between">
-                      {/* Price Display */}
-                      <div className="flex items-center gap-2">
-                        {product.discount?.type && product.discount?.value > 0 && product.finalPrice < product.price ? (
-                          <>
-                            <span className="text-gray-300 text-sm line-through">
-                              {formatPrice(product.price)}
-                            </span>
-                            <span className="text-white text-2xl font-bold drop-shadow-lg">
-                              {formatPrice(product.finalPrice)}
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-white text-2xl font-bold drop-shadow-lg">
-                            {formatPrice(product.price)}
-                          </span>
-                        )}
-                      </div>                    {/* Stock Badge */}
-                    <span className={`px-3 py-1 text-xs font-bold rounded-full backdrop-blur-md ${
-                      product.stock > 0 
-                        ? 'bg-green-500/90 text-white' 
-                        : 'bg-red-500/90 text-white'
-                    } shadow-lg`}>
-                      {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
+              )}
+            </div>
+          </div>
+          
+          {/* Filter Pills */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-warm-gray-700">Category</label>
+              <select
+                name="category"
+                value={filters.category}
+                onChange={handleFilterChange}
+                className="w-full px-4 py-3 border border-warm-gray-300 rounded-xl focus:ring-2 focus:ring-etsy-orange focus:border-etsy-orange bg-white transition-all duration-200 hover:shadow-sm"
+              >
+                <option value="all">All Categories</option>
+                <option value="electronics">Electronics</option>
+                <option value="clothing">Clothing</option>
+                <option value="home">Home & Garden</option>
+                <option value="sports">Sports & Fitness</option>
+                <option value="books">Books</option>
+                <option value="beauty">Beauty & Care</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-warm-gray-700">Deals</label>
+              <select
+                name="discount"
+                value={filters.discount}
+                onChange={handleFilterChange}
+                className="w-full px-4 py-3 border border-warm-gray-300 rounded-xl focus:ring-2 focus:ring-etsy-orange focus:border-etsy-orange bg-white transition-all duration-200 hover:shadow-sm"
+              >
+                <option value="all">All Products</option>
+                <option value="discount">On Sale</option>
+              </select>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-warm-gray-700">Min Price</label>
+              <input
+                type="number"
+                name="minPrice"
+                value={filters.minPrice}
+                onChange={handleFilterChange}
+                placeholder="$0"
+                className="w-full px-4 py-3 border border-warm-gray-300 rounded-xl focus:ring-2 focus:ring-etsy-orange focus:border-etsy-orange transition-all duration-200 hover:shadow-sm"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-warm-gray-700">Max Price</label>
+              <input
+                type="number"
+                name="maxPrice"
+                value={filters.maxPrice}
+                onChange={handleFilterChange}
+                placeholder="Any"
+                className="w-full px-4 py-3 border border-warm-gray-300 rounded-xl focus:ring-2 focus:ring-etsy-orange focus:border-etsy-orange transition-all duration-200 hover:shadow-sm"
+              />
+            </div>
+          </div>
+          
+          {/* Active Filters Display */}
+          {(filters.search || filters.category !== 'all' || filters.discount !== 'all' || filters.minPrice || filters.maxPrice) && (
+            <div className="mt-6 pt-4 border-t border-warm-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex flex-wrap gap-2">
+                  <span className="text-sm text-warm-gray-600">Active filters:</span>
+                  {filters.search && (
+                    <span className="inline-flex items-center px-3 py-1 bg-etsy-orange/10 text-etsy-orange rounded-full text-sm">
+                      Search: "{filters.search}"
+                      <button onClick={() => setFilters(prev => ({ ...prev, search: '' }))} className="ml-2 hover:text-etsy-orange-dark">×</button>
                     </span>
-                  </div>
+                  )}
+                  {filters.category !== 'all' && (
+                    <span className="inline-flex items-center px-3 py-1 bg-sage/10 text-sage-dark rounded-full text-sm">
+                      {filters.category}
+                      <button onClick={() => setFilters(prev => ({ ...prev, category: 'all' }))} className="ml-2 hover:text-sage">×</button>
+                    </span>
+                  )}
+                  {filters.discount !== 'all' && (
+                    <span className="inline-flex items-center px-3 py-1 bg-dusty-rose/10 text-dusty-rose-dark rounded-full text-sm">
+                      On Sale
+                      <button onClick={() => setFilters(prev => ({ ...prev, discount: 'all' }))} className="ml-2 hover:text-dusty-rose">×</button>
+                    </span>
+                  )}
+                  {(filters.minPrice || filters.maxPrice) && (
+                    <span className="inline-flex items-center px-3 py-1 bg-lavender/10 text-lavender-dark rounded-full text-sm">
+                      ${filters.minPrice || '0'} - ${filters.maxPrice || '∞'}
+                      <button onClick={() => setFilters(prev => ({ ...prev, minPrice: '', maxPrice: '' }))} className="ml-2 hover:text-lavender">×</button>
+                    </span>
+                  )}
                 </div>
-                
-                {/* Action Buttons - Appear on hover */}
-                <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/40 backdrop-blur-sm z-10">
-                  <button
-                    onClick={() => addToCart(product)}
-                    disabled={product.stock === 0}
-                    className="bg-orange-500 text-white hover:bg-orange-600 text-sm py-3 px-6 rounded-lg font-semibold transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:scale-105 disabled:hover:scale-100 z-10"
-                  >
-                    Add to Cart
-                  </button>
-                  <button
-                    onClick={() => setSelectedProduct(product)}
-                    className="bg-white text-gray-900 hover:bg-gray-100 text-sm py-3 px-6 rounded-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 z-10"
-                  >
-                    View Details
-                  </button>
-                </div>
+                <button
+                  onClick={() => setFilters({ search: '', category: 'all', minPrice: '', maxPrice: '', discount: 'all' })}
+                  className="text-sm text-warm-gray-500 hover:text-etsy-orange underline"
+                >
+                  Clear all
+                </button>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          )}
+      </Card>
 
-      {products.length === 0 && !loading && (
-        <Card className="p-12 text-center">
-          <div className="text-6xl mb-4">🛒</div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No Products Found</h3>
-          <p className="text-gray-600">Try adjusting your search filters</p>
-        </Card>
-      )}
-
-      {/* Purchase Modal */}
-      {showPurchaseModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <h2 className="text-xl font-bold mb-4">Checkout</h2>
+        {/* Mini Cart Summary - Only for authenticated users */}
+        {user && cart.length > 0 && (
+          <Card className="p-6 bg-gradient-to-r from-etsy-orange/5 via-sage/5 to-dusty-rose/5 border border-etsy-orange/20 shadow-sm hover:shadow-md transition-all duration-200 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-gradient-to-r from-etsy-orange to-etsy-orange-dark rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.68 4.36M7 13l1.68 4.36m0 0L16 15M9 19a2 2 0 11-4 0 2 2 0 014 0zm8 0a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <span className="font-semibold text-warm-gray-800 text-lg">
+                    {cart.length} item{cart.length !== 1 ? 's' : ''} in cart
+                  </span>
+                  {appliedCoupon && (
+                    <div className="text-sm text-sage-dark font-medium mt-1 flex items-center">
+                      <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      Coupon "{appliedCoupon.code}" applied!
+                    </div>
+                  )}
+                </div>
+              </div>
               
-              {/* Cart Items */}
-              <div className="mb-6">
-                <h3 className="font-semibold mb-2">Order Items</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {cart.map(item => (
-                    <div key={item.productId} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 group">
-                      {/* Full-height product image with gradient overlay - matching main cards */}
+              <div className="flex items-center space-x-6">
+                <div className="text-right">
+                  {appliedCoupon ? (
+                    <>
+                      <div className="text-sm text-warm-gray-500 line-through">
+                        {formatPrice(getTotalPrice())}
+                      </div>
+                      <div className="font-bold text-sage-dark text-xl">
+                        {formatPrice(getFinalTotal())}
+                      </div>
+                      <div className="text-sm text-sage font-medium">
+                        You save {formatPrice(getTotalPrice() - getFinalTotal())}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="font-bold text-warm-gray-900 text-xl">
+                      {formatPrice(getTotalPrice())}
+                    </div>
+                  )}
+                </div>
+                
+                <Button 
+                  onClick={() => {
+                    if (!user) {
+                      requireAuth('proceed to checkout');
+                      return;
+                    }
+                    setShowPurchaseModal(true);
+                  }}
+                  className="bg-gradient-to-r from-etsy-orange to-etsy-orange-dark hover:from-etsy-orange-dark hover:to-warm-blue text-white px-8 py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+                >
+                  Checkout
+                </Button>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Products Grid */}
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-etsy-orange mx-auto"></div>
+            <p className="text-warm-gray-600 mt-6 text-lg">Loading products...</p>
+          </div>
+        ) : (
+          <>
+            {products.length > 0 ? (
+              <div className="w-full">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
+                  {products.map(product => (
+                    <div key={product._id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 group">
                       <div className="relative w-full h-80 bg-gray-100 overflow-hidden">
-                        {item.imageUrl ? (
-                          <>
-                            <img
-                              src={item.imageUrl}
-                              alt={item.title}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
-                            {/* Dark gradient overlay for better text readability */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
-                          </>
+                        {product.imageUrl ? (
+                          <img
+                            src={product.imageUrl}
+                            alt={product.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-200">
+                          <div className="w-full h-full flex items-center justify-center text-warm-gray-400 bg-warm-gray-100">
                             <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
                             </svg>
                           </div>
                         )}
                         
-                        {/* Remove button - Top Right (similar to wishlist position) */}
+                        {/* Wishlist Heart Button */}
                         <button
-                          onClick={() => removeFromCart(item.productId)}
-                          className="absolute top-3 right-3 p-2 rounded-full bg-red-500/90 text-white hover:bg-red-600 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-110 z-20"
+                          onClick={() => {
+                            if (!user) {
+                              requireAuth('manage your wishlist');
+                              return;
+                            }
+                            toggleWishlist(product._id);
+                          }}
+                          className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-md transition-all duration-200 z-20 ${
+                            user && wishlist.includes(product._id)
+                              ? 'bg-red-500/90 text-white scale-110'
+                              : 'bg-white/80 text-gray-600 hover:text-red-500 hover:bg-white/95'
+                          } shadow-lg hover:shadow-xl hover:scale-110`}
+                          title={!user ? 'Sign in to add to wishlist' : 
+                            wishlist.includes(product._id) ? 'Remove from wishlist' : 'Add to wishlist'}
                         >
-                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
                           </svg>
                         </button>
                         
-                        {/* Discount badge - Top Left (if item has discount) */}
-                        {item.hasDiscount && (
-                          <div className="absolute top-3 left-3 bg-green-500 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow-lg backdrop-blur-sm">
-                            DISCOUNT
+                        {/* Discount Badge */}
+                        {product.discount?.type && product.discount.value > 0 && (
+                          <div className="absolute top-3 left-3 bg-red-500 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow-lg backdrop-blur-sm">
+                            {product.discount.type === 'percentage' 
+                              ? `${product.discount.value}% OFF`
+                              : `$${product.discount.value} OFF`
+                            }
                           </div>
                         )}
+
+                        {/* Product Info Overlay */}
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent p-4">
+                          <div className="text-white space-y-2">
+                            <h3 className="font-semibold text-lg leading-tight line-clamp-2">
+                              {product.title}
+                            </h3>
+                            <div className="flex items-center justify-between">
+                              <div className="flex flex-col">
+                                {product.discount?.type && product.discount?.value > 0 && product.finalPrice < product.price ? (
+                                  <div className="flex items-center space-x-2">
+                                    <span className="text-lg font-bold text-white">
+                                      {formatPrice(product.finalPrice)}
+                                    </span>
+                                    <span className="text-sm text-gray-300 line-through">
+                                      {formatPrice(product.price)}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="text-lg font-bold text-white">
+                                    {formatPrice(product.price)}
+                                  </span>
+                                )}
+                                {product.stock > 0 ? (
+                                  <span className="text-sm text-green-300 font-medium">In Stock</span>
+                                ) : (
+                                  <span className="text-sm text-red-300 font-medium">Out of Stock</span>
+                                )}
+                              </div>
+                              
+                              {/* Add to Cart Button */}
+                              <button
+                                onClick={() => {
+                                  if (!user) {
+                                    requireAuth('add items to cart');
+                                    return;
+                                  }
+                                  addToCart(product);
+                                }}
+                                disabled={product.stock === 0}
+                                className="px-4 py-2 bg-white/90 text-gray-900 rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white hover:shadow-lg active:scale-95 backdrop-blur-sm"
+                              >
+                                {product.stock === 0 ? '✖️' : '🛒'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
                         
-                        {/* Product Title & Details - Bottom with transparency */}
-                        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-                          <h3 className="font-semibold text-white text-base mb-3 line-clamp-2 drop-shadow-lg">
-                            {item.title}
-                          </h3>
-                          
-                          {/* Price and Quantity Row */}
-                          <div className="flex items-end justify-between mb-3">
-                            {/* Price Display */}
-                            <div className="flex items-center gap-2">
-                              {item.hasDiscount ? (
-                                <>
-                                  <span className="text-gray-300 text-sm line-through">
-                                    ${(item.originalPrice * item.qty).toFixed(2)}
-                                  </span>
-                                  <span className="text-white text-2xl font-bold drop-shadow-lg">
-                                    ${(item.price * item.qty).toFixed(2)}
-                                  </span>
-                                </>
-                              ) : (
-                                <span className="text-white text-2xl font-bold drop-shadow-lg">
-                                  ${(item.price * item.qty).toFixed(2)}
-                                </span>
-                              )}
-                            </div>
-                            
-                            {/* Quantity Badge */}
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => updateCartQty(item.productId, item.qty - 1)}
-                                className="bg-white/20 backdrop-blur-md text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/30 transition-all duration-200"
-                              >
-                                −
-                              </button>
-                              <span className="bg-white/90 text-gray-900 px-3 py-1 rounded-full text-sm font-bold min-w-[3rem] text-center">
-                                Qty: {item.qty}
-                              </span>
-                              <button
-                                onClick={() => updateCartQty(item.productId, item.qty + 1)}
-                                disabled={item.qty >= item.maxStock}
-                                className="bg-white/20 backdrop-blur-md text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/30 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                +
-                              </button>
-                            </div>
-                          </div>
-                          
-                          {/* Stock info */}
-                          <div className="text-center">
-                            <span className="bg-blue-500/90 text-white px-3 py-1 text-xs font-bold rounded-full backdrop-blur-md shadow-lg">
-                              {item.maxStock - item.qty} left in stock
-                            </span>
-                          </div>
+                        {/* Quick View Button */}
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <button 
+                            onClick={() => setSelectedProduct(product)}
+                            className="px-6 py-3 bg-white/90 text-gray-900 rounded-lg font-semibold transition-all duration-200 hover:bg-white hover:shadow-xl backdrop-blur-sm transform hover:scale-105"
+                          >
+                            Quick View
+                          </button>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
-                
-                {/* Order Summary */}
-                <div className="bg-blue-50 p-4 rounded-lg mt-4 border border-blue-200">
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-gray-700 text-lg">
-                      <span>Subtotal:</span>
-                    <span className="font-bold text-xl">{formatPrice(getTotalPrice())}</span>
-                    </div>
-                    {getProductDiscountSavings() > 0 && (
-                      <div className="flex justify-between text-green-600 text-lg">
-                        <span>Product Discounts:</span>
-                        <span className="font-bold text-xl">-${getProductDiscountSavings().toFixed(2)}</span>
-                      </div>
-                    )}
-                    {appliedCoupon && (
-                      <div className="flex justify-between text-green-600 text-lg">
-                        <span>Coupon Discount ({appliedCoupon.code}):</span>
-                        <span className="font-bold text-xl">-${getDiscountAmount().toFixed(2)}</span>
-                      </div>
-                    )}
-                    <div className="border-t border-blue-300 pt-3 flex justify-between text-2xl font-bold text-blue-900">
-                      <span>Total:</span>
-                      <span>{formatPrice(getFinalTotal())}</span>
-                    </div>
+              </div>
+            ) : (
+              <Card className="p-12 text-center">
+                <div className="max-w-md mx-auto">
+                  <div className="w-24 h-24 bg-warm-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg className="w-12 h-12 text-warm-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
                   </div>
+                  <h3 className="text-2xl font-semibold text-warm-gray-900 mb-3">No products found</h3>
+                  <p className="text-warm-gray-500 mb-6">Try adjusting your search or filter criteria</p>
+                  <Button 
+                    onClick={() => setFilters({ search: '', category: 'all', minPrice: '', maxPrice: '', discount: 'all' })}
+                    className="bg-etsy-orange hover:bg-etsy-orange-dark text-white"
+                  >
+                    Clear Filters
+                  </Button>
                 </div>
-              </div>
+              </Card>
+            )}
+          </>
+        )}
 
-              {/* Coupon Section */}
-              <div className="mb-6">
-                <h3 className="font-semibold mb-2">Coupon Code</h3>
-                {appliedCoupon ? (
-                  <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded">
-                    <div>
-                      <span className="font-medium text-green-800">{appliedCoupon.code}</span>
-                      <span className="text-green-600 ml-2">
-                        ({appliedCoupon.type === 'percentage' ? `${appliedCoupon.discount}%` : `$${appliedCoupon.discount}`} off)
-                      </span>
-                    </div>
-                    <button
-                      onClick={removeCoupon}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={couponCode}
-                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                      placeholder="Enter coupon code"
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
-                    />
-                    <Button
-                      onClick={validateCoupon}
-                      className="bg-blue-600 text-white hover:bg-blue-700"
-                    >
-                      Apply
-                    </Button>
-                  </div>
-                )}
-                {couponError && (
-                  <p className="text-red-500 text-sm mt-1">{couponError}</p>
-                )}
-              </div>
-
-              {/* Customer Info Form */}
-              <div className="space-y-4">
-                <h3 className="font-semibold">Customer Information</h3>
+        {/* Purchase Modal */}
+        {showPurchaseModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <h2 className="text-xl font-bold mb-4">Checkout</h2>
                 
-                <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    label="Full Name"
-                    value={customerInfo.name}
-                    onChange={(e) => setCustomerInfo(prev => ({ ...prev, name: e.target.value }))
-                    }
-                    required
-                  />
-                  <Input
-                    label="Email"
-                    type="email"
-                    value={customerInfo.email}
-                    onChange={(e) => setCustomerInfo(prev => ({ ...prev, email: e.target.value }))
-                    }
-                    required
-                  />
-                </div>
-                
-                <Input
-                  label="Phone"
-                  value={customerInfo.phone}
-                  onChange={(e) => setCustomerInfo(prev => ({ ...prev, phone: e.target.value }))
-                  }
-                  required
-                />
-                
-                <Input
-                  label="Street Address"
-                  value={customerInfo.address.street}
-                  onChange={(e) => setCustomerInfo(prev => ({
-                    ...prev,
-                    address: { ...prev.address, street: e.target.value }
-                  }))}
-                  required
-                />
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    label="City"
-                    value={customerInfo.address.city}
-                    onChange={(e) => setCustomerInfo(prev => ({
-                      ...prev,
-                      address: { ...prev.address, city: e.target.value }
-                    }))}
-                    required
-                  />
-                  <Input
-                    label="State"
-                    value={customerInfo.address.state}
-                    onChange={(e) => setCustomerInfo(prev => ({
-                      ...prev,
-                      address: { ...prev.address, state: e.target.value }
-                    }))}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3 mt-6">
-                <Button
-                  onClick={handlePurchase}
-                  disabled={purchasing || cart.length === 0}
-                  className="flex-1 bg-green-600 text-white hover:bg-green-700"
-                >
-                  {purchasing ? 'Processing...' : `Place Order - ${formatPrice(getFinalTotal())}`}
-                </Button>
-                <Button
-                  onClick={() => setShowPurchaseModal(false)}
-                  className="flex-1 bg-gray-300 text-gray-700 hover:bg-gray-400"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Detailed Product View Modal */}
-      {selectedProduct && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              {/* Header */}
-              <div className="flex justify-between items-start mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">{selectedProduct.title}</h2>
-                <button
-                  onClick={() => setSelectedProduct(null)}
-                  className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
-                >
-                  ×
-                </button>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Product Image */}
-                <div className="relative">
-                  <div className="w-full h-96 bg-gray-100 rounded-lg overflow-hidden">
-                    {selectedProduct.imageUrl ? (
-                      <img
-                        src={selectedProduct.imageUrl}
-                        alt={selectedProduct.title}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400">
-                        <svg className="w-24 h-24" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                        </svg>
+                {/* Cart Items */}
+                <div className="mb-6">
+                  <h3 className="font-semibold mb-2">Order Items</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {cart.map(item => (
+                      <div key={item.productId} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 group">
+                        <div className="relative w-full h-80 bg-gray-100 overflow-hidden">
+                          {item.imageUrl ? (
+                            <>
+                              <img
+                                src={item.imageUrl}
+                                alt={item.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+                            </>
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-200">
+                              <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          )}
+                          
+                          <button
+                            onClick={() => removeFromCart(item.productId)}
+                            className="absolute top-3 right-3 p-2 rounded-full bg-red-500/90 text-white hover:bg-red-600 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-110 z-20"
+                          >
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                          
+                          {item.hasDiscount && (
+                            <div className="absolute top-3 left-3 bg-green-500 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow-lg backdrop-blur-sm">
+                              DISCOUNT
+                            </div>
+                          )}
+                          
+                          <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+                            <h3 className="font-semibold text-white text-base mb-3 line-clamp-2 drop-shadow-lg">
+                              {item.title}
+                            </h3>
+                            
+                            <div className="flex items-end justify-between mb-3">
+                              <div className="flex items-center gap-2">
+                                {item.hasDiscount ? (
+                                  <>
+                                    <span className="text-gray-300 text-sm line-through">
+                                      ${(item.originalPrice * item.qty).toFixed(2)}
+                                    </span>
+                                    <span className="text-white text-2xl font-bold drop-shadow-lg">
+                                      ${(item.price * item.qty).toFixed(2)}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span className="text-white text-2xl font-bold drop-shadow-lg">
+                                    ${(item.price * item.qty).toFixed(2)}
+                                  </span>
+                                )}
+                              </div>
+                              
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => updateCartQty(item.productId, item.qty - 1)}
+                                  className="bg-white/20 backdrop-blur-md text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/30 transition-all duration-200"
+                                >
+                                  −
+                                </button>
+                                <span className="bg-white/90 text-gray-900 px-3 py-1 rounded-full text-sm font-bold min-w-[3rem] text-center">
+                                  Qty: {item.qty}
+                                </span>
+                                <button
+                                  onClick={() => updateCartQty(item.productId, item.qty + 1)}
+                                  disabled={item.qty >= item.maxStock}
+                                  className="bg-white/20 backdrop-blur-md text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/30 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
+                            
+                            <div className="text-center">
+                              <span className="bg-blue-500/90 text-white px-3 py-1 text-xs font-bold rounded-full backdrop-blur-md shadow-lg">
+                                {item.maxStock - item.qty} left in stock
+                              </span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    )}
+                    ))}
                   </div>
                   
-                  {/* Discount Badge on Image */}
-                  {selectedProduct.discount?.type && selectedProduct.discount.value > 0 && (
-                    <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-2 rounded-lg text-sm font-semibold">
-                      {selectedProduct.discount.type === 'percentage' 
-                        ? `${selectedProduct.discount.value}% OFF`
-                        : `$${selectedProduct.discount.value} OFF`
-                      }
+                  {/* Order Summary */}
+                  <div className="bg-blue-50 p-4 rounded-lg mt-4 border border-blue-200">
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-gray-700 text-lg">
+                        <span>Subtotal:</span>
+                        <span className="font-bold text-xl">{formatPrice(getTotalPrice())}</span>
+                      </div>
+                      {getProductDiscountSavings() > 0 && (
+                        <div className="flex justify-between text-green-600 text-lg">
+                          <span>Product Discounts:</span>
+                          <span className="font-bold text-xl">-${getProductDiscountSavings().toFixed(2)}</span>
+                        </div>
+                      )}
+                      {appliedCoupon && (
+                        <div className="flex justify-between text-green-600 text-lg">
+                          <span>Coupon Discount ({appliedCoupon.code}):</span>
+                          <span className="font-bold text-xl">-${getDiscountAmount().toFixed(2)}</span>
+                        </div>
+                      )}
+                      <div className="border-t border-blue-300 pt-3 flex justify-between text-2xl font-bold text-blue-900">
+                        <span>Total:</span>
+                        <span>{formatPrice(getFinalTotal())}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Coupon Section */}
+                <div className="mb-6">
+                  <h3 className="font-semibold mb-2">Coupon Code</h3>
+                  {appliedCoupon ? (
+                    <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded">
+                      <div>
+                        <span className="font-medium text-green-800">{appliedCoupon.code}</span>
+                        <span className="text-green-600 ml-2">
+                          ({appliedCoupon.type === 'percentage' ? `${appliedCoupon.discount}%` : `$${appliedCoupon.discount}`} off)
+                        </span>
+                      </div>
+                      <button
+                        onClick={removeCoupon}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={couponCode}
+                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                        placeholder="Enter coupon code"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
+                      />
+                      <Button
+                        onClick={validateCoupon}
+                        className="bg-blue-600 text-white hover:bg-blue-700"
+                      >
+                        Apply
+                      </Button>
                     </div>
                   )}
+                  {couponError && (
+                    <p className="text-red-500 text-sm mt-1">{couponError}</p>
+                  )}
+                </div>
+
+                {/* Customer Info Form */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold">Customer Information</h3>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      label="Full Name"
+                      value={customerInfo.name}
+                      onChange={(e) => setCustomerInfo(prev => ({ ...prev, name: e.target.value }))}
+                      required
+                    />
+                    <Input
+                      label="Email"
+                      type="email"
+                      value={customerInfo.email}
+                      onChange={(e) => setCustomerInfo(prev => ({ ...prev, email: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  
+                  <Input
+                    label="Phone"
+                    value={customerInfo.phone}
+                    onChange={(e) => setCustomerInfo(prev => ({ ...prev, phone: e.target.value }))}
+                    required
+                  />
+                  
+                  <Input
+                    label="Street Address"
+                    value={customerInfo.address.street}
+                    onChange={(e) => setCustomerInfo(prev => ({
+                      ...prev,
+                      address: { ...prev.address, street: e.target.value }
+                    }))}
+                    required
+                  />
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      label="City"
+                      value={customerInfo.address.city}
+                      onChange={(e) => setCustomerInfo(prev => ({
+                        ...prev,
+                        address: { ...prev.address, city: e.target.value }
+                      }))}
+                      required
+                    />
+                    <Input
+                      label="State"
+                      value={customerInfo.address.state}
+                      onChange={(e) => setCustomerInfo(prev => ({
+                        ...prev,
+                        address: { ...prev.address, state: e.target.value }
+                      }))}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                  <Button
+                    onClick={handlePurchase}
+                    disabled={purchasing || cart.length === 0}
+                    className="flex-1 bg-green-600 text-white hover:bg-green-700"
+                  >
+                    {purchasing ? 'Processing...' : `Place Order - ${formatPrice(getFinalTotal())}`}
+                  </Button>
+                  <Button
+                    onClick={() => setShowPurchaseModal(false)}
+                    className="flex-1 bg-gray-300 text-gray-700 hover:bg-gray-400"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Product Quick View Modal */}
+        {selectedProduct && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900">{selectedProduct.title}</h2>
+                  <button
+                    onClick={() => setSelectedProduct(null)}
+                    className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+                  >
+                    ×
+                  </button>
                 </div>
                 
-                {/* Product Details */}
-                <div className="space-y-6">
-                  {/* Price Section */}
-                  <div className="bg-gray-800 rounded-lg p-4">
-                    <h3 className="text-lg font-semibold text-white mb-2">Price</h3>
-                    {selectedProduct.discount?.type && selectedProduct.discount?.value > 0 && selectedProduct.finalPrice < selectedProduct.price ? (
-                      <div className="text-center">
-                        <div className="flex items-center justify-center space-x-4 mb-2">
-                          <div className="relative">
-                            <span className="text-white text-2xl font-bold line-through opacity-75">
-                              ${selectedProduct.price}
-                            </span>
-                            <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-red-400 font-bold text-3xl">×</span>
-                          </div>
-                          <span className="text-white text-5xl font-bold">${selectedProduct.finalPrice}</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Product Image */}
+                  <div className="relative">
+                    <div className="w-full h-96 bg-gray-100 rounded-lg overflow-hidden">
+                      {selectedProduct.imageUrl ? (
+                        <img
+                          src={selectedProduct.imageUrl}
+                          alt={selectedProduct.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400">
+                          <svg className="w-24 h-24" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                          </svg>
                         </div>
-                        <div className="text-green-400 text-lg font-medium">
-                          You save ${(selectedProduct.price - selectedProduct.finalPrice).toFixed(2)}
-                        </div>
+                      )}
+                    </div>
+                    
+                    {selectedProduct.discount?.type && selectedProduct.discount.value > 0 && (
+                      <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-2 rounded-lg text-sm font-semibold">
+                        {selectedProduct.discount.type === 'percentage' 
+                          ? `${selectedProduct.discount.value}% OFF`
+                          : `$${selectedProduct.discount.value} OFF`
+                        }
                       </div>
-                    ) : (
-                      <div className="text-white text-5xl font-bold text-center">${selectedProduct.price}</div>
                     )}
                   </div>
                   
-                  {/* Stock Status */}
-                  <div className="flex items-center space-x-2">
-                    <span className="font-medium text-gray-700">Availability:</span>
-                    <span className={`px-4 py-2 rounded-full text-lg font-bold ${
-                      selectedProduct.stock > 0 
-                        ? 'bg-green-500 text-white' 
-                        : 'bg-red-500 text-white'
-                    }`}>
-                      {selectedProduct.stock > 0 ? `In Stock (${selectedProduct.stock} available)` : 'Out of Stock'}
-                    </span>
-                  </div>
-                  
-                  {/* Category */}
-                  <div className="flex items-center space-x-2">
-                    <span className="font-medium text-gray-700">Category:</span>
-                    <span className="bg-gray-100 px-3 py-1 rounded-full text-sm text-gray-700 uppercase">
-                      {selectedProduct.category}
-                    </span>
-                  </div>
-                  
-                  {/* Description */}
-                  <div>
-                    <h3 className="font-medium text-gray-700 mb-2">Description</h3>
-                    <p className="text-gray-600 leading-relaxed">
-                      {selectedProduct.description || 'No description available.'}
-                    </p>
-                  </div>
-                  
-                  {/* Action Buttons */}
-                  <div className="flex gap-3 pt-4">
-                    <button
-                      onClick={() => {
-                        addToCart(selectedProduct);
-                        setSelectedProduct(null);
-                      }}
-                      disabled={selectedProduct.stock === 0}
-                      className="flex-1 bg-orange-500 text-white hover:bg-orange-600 py-3 px-6 rounded-lg transition-colors disabled:bg-gray-300 font-medium"
-                    >
-                      {selectedProduct.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
-                    </button>
-                    <button
-                      onClick={() => toggleWishlist(selectedProduct._id)}
-                      className={`px-6 py-3 rounded-lg transition-colors font-medium ${
-                        wishlist.includes(selectedProduct._id)
-                          ? 'bg-red-500 text-white hover:bg-red-600'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    >
-                      {wishlist.includes(selectedProduct._id) ? '♥ Remove from Wishlist' : '♡ Add to Wishlist'}
-                    </button>
+                  {/* Product Details */}
+                  <div className="space-y-6">
+                    <div className="bg-gray-800 rounded-lg p-4">
+                      <h3 className="text-lg font-semibold text-white mb-2">Price</h3>
+                      {selectedProduct.discount?.type && selectedProduct.discount?.value > 0 && selectedProduct.finalPrice < selectedProduct.price ? (
+                        <div className="text-center">
+                          <div className="flex items-center justify-center space-x-4 mb-2">
+                            <div className="relative">
+                              <span className="text-white text-2xl font-bold line-through opacity-75">
+                                ${selectedProduct.price}
+                              </span>
+                              <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-red-400 font-bold text-3xl">×</span>
+                            </div>
+                            <span className="text-white text-5xl font-bold">${selectedProduct.finalPrice}</span>
+                          </div>
+                          <div className="text-green-400 text-lg font-medium">
+                            You save ${(selectedProduct.price - selectedProduct.finalPrice).toFixed(2)}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-white text-5xl font-bold text-center">${selectedProduct.price}</div>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <span className="font-medium text-gray-700">Availability:</span>
+                      <span className={`px-4 py-2 rounded-full text-lg font-bold ${
+                        selectedProduct.stock > 0 
+                          ? 'bg-green-500 text-white' 
+                          : 'bg-red-500 text-white'
+                      }`}>
+                        {selectedProduct.stock > 0 ? `In Stock (${selectedProduct.stock} available)` : 'Out of Stock'}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <span className="font-medium text-gray-700">Category:</span>
+                      <span className="bg-gray-100 px-3 py-1 rounded-full text-sm text-gray-700 uppercase">
+                        {selectedProduct.category}
+                      </span>
+                    </div>
+                    
+                    <div>
+                      <h3 className="font-medium text-gray-700 mb-2">Description</h3>
+                      <p className="text-gray-600 leading-relaxed">
+                        {selectedProduct.description || 'No description available.'}
+                      </p>
+                    </div>
+                    
+                    <div className="flex gap-3 pt-4">
+                      <button
+                        onClick={() => {
+                          if (!user) {
+                            requireAuth('add items to cart');
+                            return;
+                          }
+                          addToCart(selectedProduct);
+                          setSelectedProduct(null);
+                        }}
+                        disabled={selectedProduct.stock === 0}
+                        className="flex-1 bg-orange-500 text-white hover:bg-orange-600 py-3 px-6 rounded-lg transition-colors disabled:bg-gray-300 font-medium"
+                      >
+                        {selectedProduct.stock === 0 ? 'Out of Stock' : 
+                         !user ? '🔒 Sign in to Add to Cart' : 'Add to Cart'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (!user) {
+                            requireAuth('manage your wishlist');
+                            return;
+                          }
+                          toggleWishlist(selectedProduct._id);
+                        }}
+                        className={`px-6 py-3 rounded-lg transition-colors font-medium ${
+                          user && wishlist.includes(selectedProduct._id)
+                            ? 'bg-red-500 text-white hover:bg-red-600'
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                      >
+                        {!user ? '🔒 Sign in for Wishlist' :
+                         wishlist.includes(selectedProduct._id) ? '♥ Remove from Wishlist' : '♡ Add to Wishlist'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

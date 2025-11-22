@@ -14,7 +14,7 @@ export const AdminRoute = ({ children }) => {
   }
   
   if (!user || user.role !== 'admin') {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/auth" state={{ from: location }} replace />;
   }
   
   return children;
@@ -33,7 +33,7 @@ export const CustomerRoute = ({ children }) => {
   }
   
   if (!user || user.role !== 'customer') {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/auth" state={{ from: location }} replace />;
   }
   
   return children;

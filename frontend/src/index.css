@@ -200,7 +200,7 @@
   /* Product Card Component */
   .product-card {
     @apply bg-white rounded-2xl shadow-soft hover:shadow-large transition-all duration-300
-           border border-warm-gray-100 overflow-hidden group cursor-pointer
+           border border-warm-gray-100 overflow-hidden cursor-pointer
            transform hover:-translate-y-2;
   }
   
@@ -209,7 +209,11 @@
   }
   
   .product-card-image img {
-    @apply w-full h-full object-cover transition-transform duration-300 group-hover:scale-105;
+    @apply w-full h-full object-cover transition-transform duration-300;
+  }
+  
+  .group:hover .product-card-image img {
+    transform: scale(1.05);
   }
   
   .product-card-content {
@@ -355,4 +359,257 @@
 /* Focus Visible for Better Accessibility */
 .focus-visible:focus {
   @apply outline-none ring-4 ring-etsy-orange ring-opacity-30;
+}
+
+/* ✅ MODERN AUTH STYLING */
+.auth-container {
+  @apply min-h-screen bg-gradient-to-br from-warm-cream via-warm-gray-50 to-warm-white flex items-center justify-center px-4 py-12;
+}
+
+.auth-card {
+  @apply bg-white/95 backdrop-blur-sm shadow-xl border-0 rounded-3xl p-8 w-full max-w-md relative border border-warm-gray-100;
+}
+
+.auth-header {
+  @apply text-center mb-8;
+}
+
+.auth-icon {
+  @apply mx-auto h-20 w-20 bg-gradient-to-br from-etsy-orange via-etsy-orange-light to-etsy-orange-dark rounded-3xl flex items-center justify-center mb-6 shadow-lg transform hover:scale-105 transition-transform duration-300;
+}
+
+.auth-title {
+  @apply text-4xl font-bold bg-gradient-to-r from-warm-gray-800 via-etsy-orange to-etsy-orange-dark bg-clip-text text-transparent mb-3;
+}
+
+.auth-subtitle {
+  @apply text-warm-gray-600 text-lg;
+}
+
+.auth-toggle {
+  @apply flex bg-warm-gray-100 p-1 rounded-2xl mb-8;
+}
+
+.auth-toggle-btn {
+  @apply flex-1 py-3 px-6 rounded-xl font-semibold transition-all duration-300;
+}
+
+.auth-toggle-btn.active {
+  @apply bg-white text-warm-gray-800 shadow-md;
+}
+
+.auth-toggle-btn.inactive {
+  @apply text-warm-gray-500 hover:text-warm-gray-700;
+}
+
+.auth-input {
+  @apply w-full px-4 py-3 pl-12 border border-warm-gray-200 rounded-2xl focus:border-etsy-orange focus:ring-etsy-orange/20 focus:ring-4 transition-all duration-300;
+}
+
+.auth-submit-btn {
+  @apply w-full bg-gradient-to-r from-etsy-orange via-etsy-orange-light to-etsy-orange-dark hover:from-etsy-orange-dark hover:via-etsy-orange hover:to-etsy-orange-light text-white font-semibold py-4 px-6 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl;
+}
+
+.auth-background-decoration {
+  @apply absolute inset-0 overflow-hidden pointer-events-none;
+}
+
+.auth-info-card {
+  @apply bg-white/60 backdrop-blur-sm rounded-2xl p-4 border border-warm-gray-100;
+}
+
+/* ✅ UNIFIED LAYOUT SYSTEM */
+.page-container {
+  @apply min-h-screen bg-warm-white;
+}
+
+.page-content {
+  @apply container-custom section-padding;
+}
+
+.page-header {
+  @apply mb-8 lg:mb-12;
+}
+
+.page-title {
+  @apply text-3xl lg:text-4xl font-bold text-warm-gray-900 mb-4;
+}
+
+.page-subtitle {
+  @apply text-lg text-warm-gray-600 max-w-2xl;
+}
+
+/* ✅ CONSISTENT CARD HEIGHTS & WIDTHS */
+.product-card-unified {
+  @apply w-full bg-white rounded-2xl shadow-soft hover:shadow-large 
+         transition-all duration-300 border border-warm-gray-100 overflow-hidden 
+         cursor-pointer transform hover:-translate-y-2 relative;
+  aspect-ratio: 3/4;
+}
+
+.product-card-unified-image {
+  @apply w-full h-full bg-warm-gray-50 overflow-hidden relative;
+}
+
+.product-card-unified-content {
+  @apply absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent;
+}
+
+.product-card-unified-title {
+  @apply font-semibold text-white text-base mb-2 line-clamp-2 drop-shadow-lg;
+}
+
+.product-card-unified-price {
+  @apply font-bold text-white text-xl drop-shadow-lg;
+}
+
+/* Overlay action buttons */
+.product-card-overlay {
+  @apply absolute inset-0 flex items-center justify-center gap-3 opacity-0 
+         transition-opacity duration-300 bg-black/40 backdrop-blur-sm z-10;
+}
+
+.group:hover .product-card-overlay {
+  opacity: 1;
+}
+
+/* ✅ RESPONSIVE GRID SYSTEM */
+.products-grid {
+  @apply grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 
+         gap-6 lg:gap-8;
+}
+
+.products-grid-large {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8;
+}
+
+/* ✅ ADMIN SPECIFIC STYLING */
+.admin-layout {
+  @apply bg-gradient-to-br from-warm-cream via-warm-white to-warm-gray-50 min-h-screen;
+}
+
+.admin-sidebar {
+  @apply bg-white shadow-soft border-r border-warm-gray-100;
+}
+
+.admin-content {
+  @apply flex-1 p-6 lg:p-8;
+}
+
+/* ✅ CUSTOMER SPECIFIC STYLING */
+.customer-layout {
+  @apply bg-warm-white min-h-screen;
+}
+
+.customer-sidebar {
+  @apply bg-white shadow-soft border-r border-warm-gray-100;
+}
+
+.customer-content {
+  @apply flex-1 p-6 lg:p-8;
+}
+
+/* ✅ MODAL STYLING */
+.modal-overlay-auth {
+  @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.modal-content-auth {
+  @apply bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl transform;
+  animation: slideIn 0.3s ease-out;
+}
+
+.modal-header-auth {
+  @apply text-center mb-6;
+}
+
+.modal-title-auth {
+  @apply text-2xl font-bold text-warm-gray-800 mb-2;
+}
+
+.modal-subtitle-auth {
+  @apply text-warm-gray-600;
+}
+
+.modal-actions-auth {
+  @apply flex gap-4 mt-6;
+}
+
+.modal-btn-auth {
+  @apply flex-1 py-3 px-6 rounded-xl font-semibold transition-all duration-200;
+}
+
+.modal-btn-primary-auth {
+  @apply bg-gradient-to-r from-etsy-orange to-etsy-orange-dark text-white hover:from-etsy-orange-dark hover:to-etsy-orange;
+}
+
+.modal-btn-secondary-auth {
+  @apply bg-warm-gray-100 text-warm-gray-700 hover:bg-warm-gray-200;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { 
+    opacity: 0; 
+    transform: scale(0.9) translateY(-20px);
+  }
+  to { 
+    opacity: 1; 
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ✅ RESPONSIVE UTILITIES */
+@media (max-width: 640px) {
+  .auth-title {
+    @apply text-3xl;
+  }
+  
+  .auth-subtitle {
+    @apply text-base;
+  }
+  
+  .auth-card {
+    @apply p-6;
+  }
+  
+  .modal-content-auth {
+    @apply p-6 mx-4;
+  }
+}
+
+/* ✅ RESPONSIVE PRODUCT GRID */
+.products-grid-responsive {
+  @apply grid gap-6;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+@media (max-width: 640px) {
+  .products-grid-responsive {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    @apply gap-4;
+  }
+}
+
+@media (min-width: 1024px) {
+  .products-grid-responsive {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .products-grid-responsive {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
+
+@media (min-width: 1536px) {
+  .products-grid-responsive {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
 }

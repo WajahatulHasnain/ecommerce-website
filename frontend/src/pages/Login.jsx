@@ -207,6 +207,17 @@ export default function Login() {
               )}
             </Button>
             
+            {/* Browse as Guest Button */}
+            <div className="text-center pt-4">
+              <Link
+                to="/"
+                className="w-full bg-gradient-to-r from-sage to-sage-dark text-white font-semibold py-3 px-6 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-medium hover:shadow-large flex items-center justify-center space-x-2"
+              >
+                <span>👤</span>
+                <span>Continue as Guest</span>
+              </Link>
+            </div>
+            
             {/* Signup Link */}
             <div className="text-center pt-6 border-t border-warm-gray-100">
               <span className="text-warm-gray-600">New to our platform? </span>

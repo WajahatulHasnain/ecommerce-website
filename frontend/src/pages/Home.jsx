@@ -19,7 +19,7 @@ export default function Home() {
     e.preventDefault();
     // Handle search functionality - redirect to products with search query
     if (searchQuery.trim()) {
-      window.location.href = `/customer/products?search=${encodeURIComponent(searchQuery)}`;
+      window.location.href = `/products?search=${encodeURIComponent(searchQuery)}`;
     }
   };
 
@@ -96,7 +96,7 @@ export default function Home() {
                   Get Started Today
                 </Button>
               </Link>
-              <Link to="/login">
+              <Link to="/products">
                 <Button variant="outline" size="lg" className="min-w-48">
                   Browse Products
                 </Button>
@@ -190,7 +190,7 @@ export default function Home() {
           </p>
           
           <div className="flex flex-col sm:flex-row justify-center gap-6 max-w-lg mx-auto">
-            <Link to="/login" className="flex-1">
+            <Link to="/auth" className="flex-1">
               <Button 
                 variant="secondary" 
                 size="lg" 
@@ -200,7 +200,7 @@ export default function Home() {
                 Shop as Customer
               </Button>
             </Link>
-            <Link to="/admin/login" className="flex-1">
+            <Link to="/auth" className="flex-1">
               <Button 
                 variant="outline" 
                 size="lg" 

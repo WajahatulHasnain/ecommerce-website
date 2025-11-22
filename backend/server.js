@@ -41,6 +41,10 @@ console.log("✅ Auth routes loaded");
 app.use("/api/admin", require("./routes/adminRoutes"));
 console.log("✅ Admin routes loaded");
 
+// Public routes for guest access (no auth required)
+app.use("/api/public", require("./routes/publicRoutes"));
+console.log("✅ Public routes loaded");
+
 // Customer routes (protected)
 app.use("/api/customer", require("./routes/customerRoutes"));
 console.log("✅ Customer routes loaded");

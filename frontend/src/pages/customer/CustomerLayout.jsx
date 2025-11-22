@@ -20,24 +20,24 @@ export default function CustomerLayout() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/auth');
   };
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (searchTerm.trim()) {
-      navigate(`/customer/products?search=${encodeURIComponent(searchTerm.trim())}`);
+      navigate(`/products?search=${encodeURIComponent(searchTerm.trim())}`);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="customer-layout">
       {/* Top Navigation */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <header className="nav-primary">
+        <div className="container-custom">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-8">
-              <h1 className="text-xl font-bold text-gray-800">Ecommerce Store</h1>
+              <h1 className="text-xl font-bold text-warm-gray-900">Ecommerce Store</h1>
               
               {/* Desktop Navigation */}
               <nav className="hidden md:flex space-x-6">
@@ -47,10 +47,10 @@ export default function CustomerLayout() {
                     <Link
                       key={item.name}
                       to={item.href}
-                      className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+                      className={`flex items-center space-x-2 px-3 py-2 rounded-xl transition-colors ${
                         isActive
-                          ? 'bg-orange-100 text-orange-700'
-                          : 'text-gray-700 hover:bg-gray-100'
+                          ? 'nav-link-active'
+                          : 'nav-link'
                       }`}
                     >
                       <span>{item.icon}</span>
@@ -70,7 +70,7 @@ export default function CustomerLayout() {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Search products..."
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="input-search"
                   />
                 </form>
               </div>
@@ -78,12 +78,12 @@ export default function CustomerLayout() {
               {/* User Menu */}
               <div className="flex items-center space-x-3">
                 <div className="text-right hidden sm:block">
-                  <p className="font-medium text-gray-800">{user?.name}</p>
-                  <p className="text-sm text-gray-600">{user?.email}</p>
+                  <p className="font-medium text-warm-gray-800">{user?.name}</p>
+                  <p className="text-sm text-warm-gray-600">{user?.email}</p>
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+                  className="bg-etsy-orange-dark text-white px-4 py-2 rounded-xl hover:bg-etsy-orange transition-colors"
                 >
                   Logout
                 </button>
@@ -91,7 +91,7 @@ export default function CustomerLayout() {
 
               {/* Mobile Menu Button */}
               <button
-                className="md:hidden p-2"
+                className="md:hidden p-2 text-warm-gray-600 hover:text-etsy-orange"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               >
                 ☰
@@ -102,13 +102,13 @@ export default function CustomerLayout() {
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <div className="md:hidden bg-white border-t">
+          <div className="md:hidden bg-white border-t border-warm-gray-100">
             <nav className="px-4 py-4 space-y-2">
               {navigation.map((item) => (
                 <Link
                   key={item.name}
                   to={item.href}
-                  className="flex items-center space-x-2 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100"
+                  className="nav-link flex items-center space-x-2 px-3 py-2 rounded-xl"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <span>{item.icon}</span>
@@ -121,7 +121,7 @@ export default function CustomerLayout() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="customer-content">
         <Outlet />
       </main>
     </div>
