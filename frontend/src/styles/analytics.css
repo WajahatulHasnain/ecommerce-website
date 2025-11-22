@@ -1,0 +1,100 @@
+/* Enhanced Analytics Dashboard Styles */
+
+/* Glassmorphism effects for cards */
+.analytics-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+}
+
+/* Smooth hover animations */
+.analytics-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.45);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Chart container animations */
+.chart-container {
+  animation: slideInUp 0.6s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Metric card pulse effect */
+.metric-card {
+  animation: fadeInScale 0.5s ease-out forwards;
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Progress bar animation */
+.progress-bar {
+  animation: progressFill 1.5s ease-out forwards;
+}
+
+@keyframes progressFill {
+  from {
+    width: 0%;
+  }
+  to {
+    width: var(--progress-width);
+  }
+}
+
+/* Responsive breakpoints */
+@media (max-width: 768px) {
+  .analytics-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .trend-selector {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .chart-container {
+    height: 200px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .analytics-card {
+    background: linear-gradient(135deg, rgba(30, 30, 30, 0.9), rgba(20, 20, 20, 0.8));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+}
+}
+
+/* Loading animation improvements */
+.loading-spinner {
+  background: conic-gradient(from 0deg, #F16623, #9CAF88, #F16623);
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
