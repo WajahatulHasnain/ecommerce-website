@@ -70,9 +70,8 @@ export default function AdminDashboard() {
         {/* Welcome Section */}
         <div className="page-header mb-6">
           <div className="bg-gradient-to-r from-etsy-orange to-etsy-orange-dark text-white rounded-2xl p-6 shadow-large">
-            <h1 className="text-3xl font-bold mb-2">Welcome to Admin Dashboard</h1>
-            <p className="text-etsy-orange-light text-lg mb-1">Manage your ecommerce platform efficiently</p>
-            <p className="text-white/80 text-sm">Monitor sales, track inventory, and manage customer orders from this central hub</p>
+            <h1 className="text-3xl font-bold mb-2 text-black">Welcome to Admin Dashboard</h1>
+            <p className="text-white text-lg">Manage your ecommerce platform efficiently and monitor sales, track inventory, and manage customer orders from this central hub</p>
           </div>
         </div>
 
