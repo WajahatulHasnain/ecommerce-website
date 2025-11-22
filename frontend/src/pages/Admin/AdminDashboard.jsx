@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
 import Card from '../../components/ui/Card';
 
 export default function AdminDashboard() {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchDashboardData();
@@ -66,10 +68,11 @@ export default function AdminDashboard() {
     <div className="admin-layout">
       <div className="page-content">
         {/* Welcome Section */}
-        <div className="page-header">
-          <div className="bg-gradient-to-r from-etsy-orange to-etsy-orange-dark text-white rounded-2xl p-8 shadow-large">
-            <h1 className="text-4xl font-bold mb-3">Welcome to Admin Dashboard</h1>
-            <p className="text-etsy-orange-light text-lg">Manage your ecommerce platform efficiently</p>
+        <div className="page-header mb-6">
+          <div className="bg-gradient-to-r from-etsy-orange to-etsy-orange-dark text-white rounded-2xl p-6 shadow-large">
+            <h1 className="text-3xl font-bold mb-2">Welcome to Admin Dashboard</h1>
+            <p className="text-etsy-orange-light text-lg mb-1">Manage your ecommerce platform efficiently</p>
+            <p className="text-white/80 text-sm">Monitor sales, track inventory, and manage customer orders from this central hub</p>
           </div>
         </div>
 
@@ -110,13 +113,22 @@ export default function AdminDashboard() {
           <Card className="dashboard-card">
             <h3 className="text-xl font-bold text-warm-gray-900 mb-6">⚡ Quick Actions</h3>
             <div className="space-y-4">
-              <button className="w-full text-left p-4 bg-etsy-orange/10 border border-etsy-orange/20 rounded-xl hover:bg-etsy-orange/20 transition-all duration-200 hover:shadow-soft">
+              <button 
+                onClick={() => navigate('/admin/products')}
+                className="w-full text-left p-4 bg-etsy-orange/10 border border-etsy-orange/20 rounded-xl hover:bg-etsy-orange/20 transition-all duration-200 hover:shadow-soft"
+              >
                 <span className="font-semibold text-etsy-orange">📦 Add New Product</span>
               </button>
-              <button className="w-full text-left p-4 bg-sage-green/10 border border-sage-green/20 rounded-xl hover:bg-sage-green/20 transition-all duration-200 hover:shadow-soft">
+              <button 
+                onClick={() => navigate('/admin/coupons')}
+                className="w-full text-left p-4 bg-sage-green/10 border border-sage-green/20 rounded-xl hover:bg-sage-green/20 transition-all duration-200 hover:shadow-soft"
+              >
                 <span className="font-semibold text-sage-green">🎫 Create Coupon</span>
               </button>
-              <button className="w-full text-left p-4 bg-warm-blue/10 border border-warm-blue/20 rounded-xl hover:bg-warm-blue/20 transition-all duration-200 hover:shadow-soft">
+              <button 
+                onClick={() => navigate('/admin/analytics')}
+                className="w-full text-left p-4 bg-warm-blue/10 border border-warm-blue/20 rounded-xl hover:bg-warm-blue/20 transition-all duration-200 hover:shadow-soft"
+              >
                 <span className="font-semibold text-warm-blue">📊 View Analytics</span>
               </button>
             </div>

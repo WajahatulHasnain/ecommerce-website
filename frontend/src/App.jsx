@@ -32,14 +32,15 @@ function Navigation() {
   const { user, logout } = useAuth();
   const location = useLocation();
   
-  // Hide navigation on auth pages and customer pages (CustomerLayout handles its own nav)
+  // Hide navigation on auth pages, customer pages, and admin pages (they have their own layouts)
   const authPages = [
     '/login', '/signup', '/auth'
   ];
   const isAuthPage = authPages.includes(location.pathname);
   const isCustomerPage = location.pathname.startsWith('/customer');
+  const isAdminPage = location.pathname.startsWith('/admin');
   
-  if (isAuthPage || isCustomerPage) return null;
+  if (isAuthPage || isCustomerPage || isAdminPage) return null;
   
   return (
     <header className="nav-primary">
@@ -53,15 +54,26 @@ function Navigation() {
           </Link>
           
           <nav className="flex items-center space-x-6">
-            {/* Always show Products for everyone */}
-            <Link 
-              to="/products" 
-              className={`nav-link ${
-                location.pathname === '/products' ? 'nav-link-active' : ''
-              }`}
-            >
-              🛍️ Products
-            </Link>
+            {/* Products link - different behavior based on user role */}
+            {user?.role === 'admin' ? (
+              <Link 
+                to="/admin/products" 
+                className={`nav-link ${
+                  location.pathname === '/admin/products' ? 'nav-link-active' : ''
+                }`}
+              >
+                📦 Manage Products
+              </Link>
+            ) : (
+              <Link 
+                to="/products" 
+                className={`nav-link ${
+                  location.pathname === '/products' ? 'nav-link-active' : ''
+                }`}
+              >
+                🛍️ Products
+              </Link>
+            )}
             
             {!user ? (
               // Guest user navigation
