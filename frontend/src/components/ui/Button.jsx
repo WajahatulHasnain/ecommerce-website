@@ -25,11 +25,11 @@ const Button = ({
   };
   
   const sizes = {
-    xs: 'px-3 py-1.5 text-xs rounded-lg',
-    sm: 'px-4 py-2 text-sm rounded-lg',
-    md: 'px-6 py-3 text-base rounded-xl',
-    lg: 'px-8 py-4 text-lg rounded-xl',
-    xl: 'px-10 py-5 text-xl rounded-2xl'
+    xs: 'px-2 sm:px-3 py-1 sm:py-1.5 text-xs rounded-md sm:rounded-lg',
+    sm: 'px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm rounded-md sm:rounded-lg',
+    md: 'px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base rounded-lg sm:rounded-xl',
+    lg: 'px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg rounded-lg sm:rounded-xl',
+    xl: 'px-8 sm:px-10 py-4 sm:py-5 text-lg sm:text-xl rounded-xl sm:rounded-2xl'
   };
   
   const widthClass = fullWidth ? 'w-full' : '';

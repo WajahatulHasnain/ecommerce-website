@@ -45,44 +45,44 @@ function Navigation() {
   return (
     <header className="nav-primary">
       <div className="container-custom">
-        <div className="flex justify-between items-center h-16">
-          <Link to="/" className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-etsy-orange to-etsy-orange-dark rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">E</span>
+        <div className="flex justify-between items-center h-12 sm:h-14 md:h-16">
+          <Link to="/" className="flex items-center space-x-2 sm:space-x-3">
+            <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 bg-gradient-to-r from-etsy-orange to-etsy-orange-dark rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-xs sm:text-sm">E</span>
             </div>
-            <span className="text-xl font-bold text-warm-gray-900">Ecommerce Store</span>
+            <span className="text-lg sm:text-xl font-bold text-warm-gray-900 truncate">Ecommerce Store</span>
           </Link>
           
-          <nav className="flex items-center space-x-6">
+          <nav className="flex items-center space-x-2 sm:space-x-4 md:space-x-6">
             {/* Products link - different behavior based on user role */}
             {user?.role === 'admin' ? (
               <Link 
                 to="/admin/products" 
-                className={`nav-link ${
+                className={`nav-link text-xs sm:text-sm md:text-base hidden sm:inline-flex ${
                   location.pathname === '/admin/products' ? 'nav-link-active' : ''
                 }`}
               >
-                📦 Manage Products
+                <span className="hidden md:inline">📦 </span>Products
               </Link>
             ) : (
               <Link 
                 to="/products" 
-                className={`nav-link ${
+                className={`nav-link text-xs sm:text-sm md:text-base hidden sm:inline-flex ${
                   location.pathname === '/products' ? 'nav-link-active' : ''
                 }`}
               >
-                🛍️ Products
+                <span className="hidden md:inline">🛍️ </span>Products
               </Link>
             )}
             
             {!user ? (
               // Guest user navigation
               <>
-                <span className="text-warm-gray-500 text-sm">👤 Guest Mode</span>
-                <Link to="/auth" className="nav-link">
+                <span className="text-warm-gray-500 text-xs sm:text-sm hidden md:block">👤 Guest</span>
+                <Link to="/auth?mode=signin" className="nav-link text-xs sm:text-sm">
                   Sign In
                 </Link>
-                <Link to="/auth" className="btn-primary">
+                <Link to="/auth?mode=signup" className="btn-primary text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2">
                   Sign Up
                 </Link>
               </>
@@ -93,35 +93,35 @@ function Navigation() {
                   <>
                     <Link 
                       to="/customer/dashboard" 
-                      className={`text-gray-600 hover:text-blue-600 transition-colors font-medium ${
+                      className={`text-gray-600 hover:text-blue-600 transition-colors font-medium text-xs sm:text-sm hidden md:block ${
                         location.pathname.includes('/customer/dashboard') ? 'text-blue-600 font-semibold' : ''
                       }`}
                     >
-                      🏠 Dashboard
+                      <span className="hidden lg:inline">🏠 </span>Dashboard
                     </Link>
                     <Link 
                       to="/customer/cart" 
-                      className={`text-gray-600 hover:text-blue-600 transition-colors font-medium ${
+                      className={`text-gray-600 hover:text-blue-600 transition-colors font-medium text-xs sm:text-sm ${
                         location.pathname.includes('/customer/cart') ? 'text-blue-600 font-semibold' : ''
                       }`}
                     >
-                      🛒 Cart
+                      <span className="hidden sm:inline">🛒 </span><span className="sm:hidden">Cart</span><span className="hidden sm:inline">Cart</span>
                     </Link>
                     <Link 
                       to="/customer/orders" 
-                      className={`nav-link ${
+                      className={`nav-link text-xs sm:text-sm hidden md:block ${
                         location.pathname.includes('/customer/orders') ? 'nav-link-active' : ''
                       }`}
                     >
-                      📋 Orders
+                      <span className="hidden lg:inline">📋 </span>Orders
                     </Link>
                     <Link 
                       to="/customer/wishlist" 
-                      className={`nav-link ${
+                      className={`nav-link text-xs sm:text-sm hidden lg:block ${
                         location.pathname.includes('/customer/wishlist') ? 'nav-link-active' : ''
                       }`}
                     >
-                      ❤️ Wishlist
+                      <span className="hidden xl:inline">❤️ </span>Wishlist
                     </Link>
                   </>
                 )}
@@ -129,35 +129,35 @@ function Navigation() {
                 {user.role === 'admin' && (
                   <Link 
                     to="/admin/dashboard" 
-                    className={`nav-link ${
+                    className={`nav-link text-xs sm:text-sm hidden sm:block ${
                       location.pathname.includes('/admin') ? 'text-lavender font-semibold' : ''
                     }`}
                   >
-                    ⚙️ Admin Panel
+                    <span className="hidden md:inline">⚙️ </span>Admin
                   </Link>
                 )}
                 
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 md:space-x-4">
+                  <div className="flex items-center space-x-1 sm:space-x-2 hidden md:flex">
                     <div className={`w-2 h-2 rounded-full ${
                       user.role === 'admin' ? 'bg-lavender' : 'bg-sage-green'
                     }`}></div>
-                    <span className="text-warm-gray-600">
-                      <span className="font-medium">{user.name}</span>
-                      <span className="text-sm text-warm-gray-400 ml-1">({user.role})</span>
+                    <span className="text-warm-gray-600 hidden lg:block">
+                      <span className="font-medium text-sm">{user.name}</span>
+                      <span className="text-xs text-warm-gray-400 ml-1">({user.role})</span>
                     </span>
                   </div>
                   <Link 
                     to={user.role === 'customer' ? '/customer/profile' : '/admin/settings'}
-                    className="nav-link"
+                    className="nav-link text-xs sm:text-sm hidden sm:block"
                   >
-                    👤 Profile
+                    <span className="hidden md:inline">👤 </span>Profile
                   </Link>
                   <button
                     onClick={logout}
-                    className="text-etsy-orange-dark hover:text-etsy-orange transition-colors font-medium"
+                    className="text-etsy-orange-dark hover:text-etsy-orange transition-colors font-medium text-xs sm:text-sm"
                   >
-                    🚪 Logout
+                    <span className="hidden sm:inline">🚪 </span>Logout
                   </button>
                 </div>
               </>

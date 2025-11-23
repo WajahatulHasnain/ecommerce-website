@@ -3,19 +3,37 @@ import api from '../../utils/api';
 import Card from '../../components/ui/Card';
 import LineChart from '../../components/charts/LineChart';
 import BarChart from '../../components/charts/BarChart';
+import { useSettings } from '../../context/SettingsContext';
 
 export default function AdminAnalytics() {
+  const { formatPrice } = useSettings();
   const [analyticsData, setAnalyticsData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [trendPeriod, setTrendPeriod] = useState('total'); // NEW: Trend selector
+  const [trendPeriod, setTrendPeriod] = useState('total');
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   useEffect(() => {
     fetchAnalytics(trendPeriod);
-  }, [trendPeriod]);
+    
+    // Set up auto-refresh every 30 seconds if enabled
+    let refreshInterval;
+    if (autoRefresh) {
+      refreshInterval = setInterval(() => {
+        fetchAnalytics(trendPeriod, true); // Silent refresh
+      }, 30000);
+    }
+    
+    return () => {
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+      }
+    };
+  }, [trendPeriod, autoRefresh]);
 
-  const fetchAnalytics = async (period = 'total') => {
+  const fetchAnalytics = async (period = 'total', silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
       const response = await api.get(`/admin/analytics/summary?period=${period}`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -23,11 +41,16 @@ export default function AdminAnalytics() {
       
       if (response.data.success) {
         setAnalyticsData(response.data.data);
+        setLastUpdated(new Date());
       }
     } catch (error) {
       console.error('Failed to fetch analytics:', error);
+      // Show user-friendly error notification
+      if (!silent) {
+        alert('Failed to fetch analytics data. Please check your connection and try again.');
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -58,6 +81,7 @@ export default function AdminAnalytics() {
             dataKey={dataKey}
             color={chartColor}
             title={title}
+            formatPrice={formatPrice}
           />
         ) : (
           <BarChart 
@@ -65,6 +89,7 @@ export default function AdminAnalytics() {
             dataKey={dataKey}
             color={chartColor}
             title={title}
+            formatPrice={formatPrice}
           />
         )}
         
@@ -74,15 +99,15 @@ export default function AdminAnalytics() {
           <span>
             {dataKey === 'revenue' ? 'Total' : 'Sum'}: {
               dataKey === 'revenue' 
-                ? `$${data.reduce((sum, item) => sum + (item.revenue || 0), 0).toFixed(2)}`
-                : data.reduce((sum, item) => sum + (item.orderCount || 0), 0).toLocaleString()
+                ? formatPrice(data.reduce((sum, item) => sum + (item.revenue || 0), 0))
+                : data.reduce((sum, item) => sum + (item[dataKey] || 0), 0).toLocaleString()
             }
           </span>
           <span>
             Avg: {
               dataKey === 'revenue' 
-                ? `$${(data.reduce((sum, item) => sum + (item.revenue || 0), 0) / data.length).toFixed(2)}`
-                : Math.round(data.reduce((sum, item) => sum + (item.orderCount || 0), 0) / data.length).toLocaleString()
+                ? formatPrice(data.reduce((sum, item) => sum + (item.revenue || 0), 0) / data.length)
+                : Math.round(data.reduce((sum, item) => sum + (item[dataKey] || 0), 0) / data.length).toLocaleString()
             }
           </span>
         </div>
@@ -180,25 +205,61 @@ export default function AdminAnalytics() {
           <h1 className="text-3xl font-bold text-gray-900 bg-gradient-to-r from-etsy-orange to-sage-green bg-clip-text text-transparent">
             Analytics & Reports
           </h1>
-          <p className="text-gray-600 text-lg">Track your business performance and insights</p>
+          <div className="flex items-center space-x-4">
+            <p className="text-gray-600 text-lg">Track your business performance and insights</p>
+            {lastUpdated && (
+              <div className="flex items-center space-x-2 text-sm text-gray-500">
+                <div className={`w-2 h-2 rounded-full ${autoRefresh ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
+                <span>Last updated: {lastUpdated.toLocaleTimeString()}</span>
+              </div>
+            )}
+          </div>
         </div>
         
-        {/* Enhanced Trend Selector */}
-        <div className="flex bg-white/70 backdrop-blur-sm rounded-xl p-1.5 shadow-lg border border-white/20">
-          {trendOptions.map(option => (
+        <div className="flex items-center space-x-4">
+          {/* Auto-refresh Toggle */}
+          <div className="flex items-center space-x-2 bg-white/70 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-white/20">
             <button
-              key={option.value}
-              onClick={() => setTrendPeriod(option.value)}
-              className={`px-5 py-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-                trendPeriod === option.value
-                  ? 'bg-gradient-to-r from-etsy-orange to-etsy-orange/80 text-white shadow-lg transform scale-105'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+              onClick={() => setAutoRefresh(!autoRefresh)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                autoRefresh ? 'bg-green-500' : 'bg-gray-300'
               }`}
             >
-              <span className="mr-2">{option.icon}</span>
-              {option.label}
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                autoRefresh ? 'translate-x-6' : 'translate-x-1'
+              }`} />
             </button>
-          ))}
+            <span className="text-sm font-medium text-gray-700">Auto-refresh</span>
+          </div>
+
+          {/* Manual Refresh Button */}
+          <button
+            onClick={() => fetchAnalytics(trendPeriod)}
+            disabled={loading}
+            className="px-4 py-2 bg-white/70 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 text-gray-700 hover:bg-white/90 transition-all duration-200 disabled:opacity-50"
+          >
+            <svg className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+
+          {/* Enhanced Trend Selector */}
+          <div className="flex bg-white/70 backdrop-blur-sm rounded-xl p-1.5 shadow-lg border border-white/20">
+            {trendOptions.map(option => (
+              <button
+                key={option.value}
+                onClick={() => setTrendPeriod(option.value)}
+                className={`px-5 py-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  trendPeriod === option.value
+                    ? 'bg-gradient-to-r from-etsy-orange to-etsy-orange/80 text-white shadow-lg transform scale-105'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+                }`}
+              >
+                <span className="mr-2">{option.icon}</span>
+                {option.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -231,7 +292,7 @@ export default function AdminAnalytics() {
             <div className="w-px h-8 bg-gray-300"></div>
             <div className="text-center">
               <div className="text-2xl font-bold text-sage-green">
-                ${analyticsData.trends?.[trendPeriod]?.revenue?.toFixed(0) || '0'}
+                {formatPrice((analyticsData.trends?.[trendPeriod]?.revenue || 0))}
               </div>
               <div className="text-xs text-gray-500 uppercase tracking-wide">Period Revenue</div>
             </div>
@@ -248,7 +309,7 @@ export default function AdminAnalytics() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <MetricCard
             title="Total Sales"
-            value={`$${analyticsData.totalSales.toFixed(2)}`}
+            value={formatPrice(analyticsData.totalSales)}
             icon="💰"
             color="etsy-orange"
           />
@@ -260,7 +321,7 @@ export default function AdminAnalytics() {
           />
           <MetricCard
             title="Average Order Value"
-            value={`$${analyticsData.averageOrderValue.toFixed(2)}`}
+            value={formatPrice(analyticsData.averageOrderValue)}
             icon="📊"
             color="blue"
           />
@@ -318,7 +379,7 @@ export default function AdminAnalytics() {
               </h3>
               <div className="text-right">
                 <div className="text-2xl font-bold text-etsy-orange">
-                  ${analyticsData.trends?.[trendPeriod]?.revenue?.toFixed(0) || '0'}
+                  {formatPrice(analyticsData.trends?.[trendPeriod]?.revenue || 0)}
                 </div>
                 <div className="text-xs text-gray-500 uppercase tracking-wide">Period Total</div>
               </div>
@@ -347,10 +408,10 @@ export default function AdminAnalytics() {
             </div>
             <ChartContainer 
               title="Order Count"
-              data={analyticsData.salesData?.map(item => ({...item, revenue: item.orderCount}))}
+              data={analyticsData.salesData?.map(item => ({...item, orderCount: item.orderCount}))}
               emptyMessage="No order data available yet. First orders will appear here!"
               chartType="bar"
-              dataKey="revenue"
+              dataKey="orderCount"
             />
           </Card>
         </div>
@@ -405,7 +466,7 @@ export default function AdminAnalytics() {
                           </td>
                           <td className="py-4 px-4">
                             <div className="font-semibold text-etsy-orange">
-                              ${product.totalRevenue.toFixed(2)}
+                              {formatPrice(product.totalRevenue)}
                             </div>
                           </td>
                           <td className="py-4 px-4">
@@ -439,7 +500,7 @@ export default function AdminAnalytics() {
                   </div>
                   <div className="text-center p-4 bg-gradient-to-br from-sage-green/5 to-transparent rounded-lg">
                     <div className="text-2xl font-bold text-sage-green">
-                      ${analyticsData.topProducts.reduce((sum, p) => sum + p.totalRevenue, 0).toFixed(0)}
+                      {formatPrice(analyticsData.topProducts.reduce((sum, p) => sum + p.totalRevenue, 0))}
                     </div>
                     <div className="text-sm text-gray-600">Total Revenue</div>
                   </div>

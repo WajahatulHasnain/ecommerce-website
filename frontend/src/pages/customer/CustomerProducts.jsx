@@ -4,6 +4,7 @@ import api from '../../utils/api';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import ProductFilters from '../../components/ProductFilters';
 import { useSettings } from '../../context/SettingsContext';
 import { useAuth } from '../../context/AuthContext';
 import { useGuest } from '../../context/GuestContext';
@@ -135,10 +136,22 @@ export default function CustomerProducts() {
   };
 
   const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    
     setFilters(prev => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [name]: value
     }));
+  };
+
+  const handleClearAll = () => {
+    setFilters({
+      search: '',
+      category: 'all',
+      minPrice: '',
+      maxPrice: '',
+      discount: 'all'
+    });
   };
 
   const addToCart = async (product) => {
@@ -416,165 +429,36 @@ export default function CustomerProducts() {
 
   return (
     <div className="w-full min-h-screen bg-warm-white">
-      <div className="w-full max-w-none px-4 sm:px-6 lg:px-8 py-6">
+      <div className="w-full max-w-none px-2 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6">
         {/* Guest welcome message only for non-logged in users on home page */}
         {!user && location.pathname === '/' && (
-          <div className="mb-6 p-6 bg-warm-cream border border-warm-gray-200 rounded-2xl">
-            <p className="text-warm-gray-800">
+          <div className="mb-4 sm:mb-6 p-4 sm:p-6 bg-warm-cream border border-warm-gray-200 rounded-2xl">
+            <p className="text-warm-gray-800 text-sm sm:text-base">
               👋 <strong>Welcome Guest!</strong> You can browse all products. 
               <a href="/auth" className="text-etsy-orange hover:text-etsy-orange-dark underline ml-1">Sign in</a> to add items to cart and make purchases.
             </p>
           </div>
         )}
 
-        {/* Enhanced Search & Filters */}
-        <Card className="card-primary p-6 mb-6">
-          <h3 className="text-lg font-semibold text-warm-gray-900 mb-6">
-            Search & Filters
-          </h3>
-          
-          {/* Main Search Bar */}
-          <div className="mb-6">
-            <div className="relative max-w-4xl mx-auto">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <svg className="h-5 w-5 text-warm-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m21 21-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <input
-                type="text"
-                name="search"
-                value={filters.search}
-                onChange={handleFilterChange}
-                placeholder="Search for products, categories, brands..."
-                className="w-full pl-12 pr-4 py-4 text-lg border-2 border-warm-gray-200 rounded-2xl focus:ring-2 focus:ring-etsy-orange focus:border-etsy-orange transition-all duration-200 bg-white shadow-sm hover:shadow-md"
-              />
-              {filters.search && (
-                <button
-                  onClick={() => setFilters(prev => ({ ...prev, search: '' }))}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-warm-gray-400 hover:text-etsy-orange"
-                >
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              )}
-            </div>
-          </div>
-          
-          {/* Filter Pills */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-warm-gray-700">Category</label>
-              <select
-                name="category"
-                value={filters.category}
-                onChange={handleFilterChange}
-                className="w-full px-4 py-3 border border-warm-gray-300 rounded-xl focus:ring-2 focus:ring-etsy-orange focus:border-etsy-orange bg-white transition-all duration-200 hover:shadow-sm"
-              >
-                <option value="all">All Categories</option>
-                <option value="electronics">Electronics</option>
-                <option value="clothing">Clothing</option>
-                <option value="home">Home & Garden</option>
-                <option value="sports">Sports & Fitness</option>
-                <option value="books">Books</option>
-                <option value="beauty">Beauty & Care</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-warm-gray-700">Deals</label>
-              <select
-                name="discount"
-                value={filters.discount}
-                onChange={handleFilterChange}
-                className="w-full px-4 py-3 border border-warm-gray-300 rounded-xl focus:ring-2 focus:ring-etsy-orange focus:border-etsy-orange bg-white transition-all duration-200 hover:shadow-sm"
-              >
-                <option value="all">All Products</option>
-                <option value="discount">On Sale</option>
-              </select>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-warm-gray-700">Min Price</label>
-              <input
-                type="number"
-                name="minPrice"
-                value={filters.minPrice}
-                onChange={handleFilterChange}
-                placeholder="$0"
-                className="w-full px-4 py-3 border border-warm-gray-300 rounded-xl focus:ring-2 focus:ring-etsy-orange focus:border-etsy-orange transition-all duration-200 hover:shadow-sm"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-warm-gray-700">Max Price</label>
-              <input
-                type="number"
-                name="maxPrice"
-                value={filters.maxPrice}
-                onChange={handleFilterChange}
-                placeholder="Any"
-                className="w-full px-4 py-3 border border-warm-gray-300 rounded-xl focus:ring-2 focus:ring-etsy-orange focus:border-etsy-orange transition-all duration-200 hover:shadow-sm"
-              />
-            </div>
-          </div>
-          
-          {/* Active Filters Display */}
-          {(filters.search || filters.category !== 'all' || filters.discount !== 'all' || filters.minPrice || filters.maxPrice) && (
-            <div className="mt-6 pt-4 border-t border-warm-gray-200">
-              <div className="flex items-center justify-between">
-                <div className="flex flex-wrap gap-2">
-                  <span className="text-sm text-warm-gray-600">Active filters:</span>
-                  {filters.search && (
-                    <span className="inline-flex items-center px-3 py-1 bg-etsy-orange/10 text-etsy-orange rounded-full text-sm">
-                      Search: "{filters.search}"
-                      <button onClick={() => setFilters(prev => ({ ...prev, search: '' }))} className="ml-2 hover:text-etsy-orange-dark">×</button>
-                    </span>
-                  )}
-                  {filters.category !== 'all' && (
-                    <span className="inline-flex items-center px-3 py-1 bg-sage/10 text-sage-dark rounded-full text-sm">
-                      {filters.category}
-                      <button onClick={() => setFilters(prev => ({ ...prev, category: 'all' }))} className="ml-2 hover:text-sage">×</button>
-                    </span>
-                  )}
-                  {filters.discount !== 'all' && (
-                    <span className="inline-flex items-center px-3 py-1 bg-dusty-rose/10 text-dusty-rose-dark rounded-full text-sm">
-                      On Sale
-                      <button onClick={() => setFilters(prev => ({ ...prev, discount: 'all' }))} className="ml-2 hover:text-dusty-rose">×</button>
-                    </span>
-                  )}
-                  {(filters.minPrice || filters.maxPrice) && (
-                    <span className="inline-flex items-center px-3 py-1 bg-lavender/10 text-lavender-dark rounded-full text-sm">
-                      ${filters.minPrice || '0'} - ${filters.maxPrice || '∞'}
-                      <button onClick={() => setFilters(prev => ({ ...prev, minPrice: '', maxPrice: '' }))} className="ml-2 hover:text-lavender">×</button>
-                    </span>
-                  )}
-                </div>
-                <button
-                  onClick={() => setFilters({ search: '', category: 'all', minPrice: '', maxPrice: '', discount: 'all' })}
-                  className="text-sm text-warm-gray-500 hover:text-etsy-orange underline"
-                >
-                  Clear all
-                </button>
-              </div>
-            </div>
-          )}
-      </Card>
+        {/* Mobile-Friendly Search & Filters */}
+        <ProductFilters 
+          filters={filters}
+          onFilterChange={handleFilterChange}
+          onClearAll={handleClearAll}
+        />
 
         {/* Mini Cart Summary - Only for authenticated users */}
         {user && cart.length > 0 && (
-          <Card className="p-6 bg-gradient-to-r from-etsy-orange/5 via-sage/5 to-dusty-rose/5 border border-etsy-orange/20 shadow-sm hover:shadow-md transition-all duration-200 mb-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-r from-etsy-orange to-etsy-orange-dark rounded-full flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <Card className="p-4 sm:p-6 bg-gradient-to-r from-etsy-orange/5 via-sage/5 to-dusty-rose/5 border border-etsy-orange/20 shadow-sm hover:shadow-md transition-all duration-200 mb-4 sm:mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+              <div className="flex items-center space-x-3 sm:space-x-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-etsy-orange to-etsy-orange-dark rounded-full flex items-center justify-center">
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.68 4.36M7 13l1.68 4.36m0 0L16 15M9 19a2 2 0 11-4 0 2 2 0 014 0zm8 0a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                 </div>
                 <div>
-                  <span className="font-semibold text-warm-gray-800 text-lg">
+                  <span className="font-semibold text-warm-gray-800 text-base sm:text-lg">
                     {cart.length} item{cart.length !== 1 ? 's' : ''} in cart
                   </span>
                   {appliedCoupon && (
@@ -588,14 +472,14 @@ export default function CustomerProducts() {
                 </div>
               </div>
               
-              <div className="flex items-center space-x-6">
-                <div className="text-right">
+              <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-6">
+                <div className="text-center sm:text-right">
                   {appliedCoupon ? (
                     <>
                       <div className="text-sm text-warm-gray-500 line-through">
                         {formatPrice(getTotalPrice())}
                       </div>
-                      <div className="font-bold text-sage-dark text-xl">
+                      <div className="font-bold text-sage-dark text-lg sm:text-xl">
                         {formatPrice(getFinalTotal())}
                       </div>
                       <div className="text-sm text-sage font-medium">
@@ -603,7 +487,7 @@ export default function CustomerProducts() {
                       </div>
                     </>
                   ) : (
-                    <div className="font-bold text-warm-gray-900 text-xl">
+                    <div className="font-bold text-warm-gray-900 text-lg sm:text-xl">
                       {formatPrice(getTotalPrice())}
                     </div>
                   )}
@@ -617,7 +501,7 @@ export default function CustomerProducts() {
                     }
                     setShowPurchaseModal(true);
                   }}
-                  className="bg-gradient-to-r from-etsy-orange to-etsy-orange-dark hover:from-etsy-orange-dark hover:to-warm-blue text-white px-8 py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+                  className="bg-gradient-to-r from-etsy-orange to-etsy-orange-dark hover:from-etsy-orange-dark hover:to-warm-blue text-white px-4 sm:px-8 py-2 sm:py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 text-sm sm:text-base"
                 >
                   Checkout
                 </Button>
@@ -687,9 +571,9 @@ export default function CustomerProducts() {
                         )}
 
                         {/* Product Info Overlay */}
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent p-4">
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-4">
                           <div className="text-white space-y-2">
-                            <h3 className="font-semibold text-lg leading-tight line-clamp-2">
+                            <h3 className="font-bold text-xl leading-tight line-clamp-2 text-white drop-shadow-lg">
                               {product.title}
                             </h3>
                             <div className="flex items-center justify-between">
@@ -733,14 +617,38 @@ export default function CustomerProducts() {
                           </div>
                         </div>
                         
-                        {/* Quick View Button */}
+                        {/* Hover Action Buttons */}
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                          <button 
-                            onClick={() => setSelectedProduct(product)}
-                            className="px-6 py-3 bg-white/90 text-gray-900 rounded-lg font-semibold transition-all duration-200 hover:bg-white hover:shadow-xl backdrop-blur-sm transform hover:scale-105"
-                          >
-                            Quick View
-                          </button>
+                          <div className="flex flex-col space-y-2">
+                            {/* Add to Cart Button */}
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (!user) {
+                                  requireAuth('add items to cart', 'cart');
+                                  return;
+                                }
+                                addToCart(product);
+                              }}
+                              disabled={product.stock === 0}
+                              className="px-6 py-3 text-sm bg-etsy-orange/95 text-white rounded-xl font-semibold transition-all duration-200 hover:bg-etsy-orange hover:shadow-xl backdrop-blur-sm transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                            >
+                              <span className="text-base">{product.stock === 0 ? '❌' : '🛒'}</span>
+                              <span>{product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}</span>
+                            </button>
+                            
+                            {/* Quick View/Details Button */}
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedProduct(product);
+                              }}
+                              className="px-6 py-3 text-sm bg-white/95 text-gray-900 rounded-xl font-semibold transition-all duration-200 hover:bg-white hover:shadow-xl backdrop-blur-sm transform hover:scale-105 flex items-center justify-center space-x-2 border border-white/50"
+                            >
+                              <span className="text-base">👁️</span>
+                              <span>View Details</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -748,18 +656,19 @@ export default function CustomerProducts() {
                 </div>
               </div>
             ) : (
-              <Card className="p-12 text-center">
-                <div className="max-w-md mx-auto">
-                  <div className="w-24 h-24 bg-warm-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <svg className="w-12 h-12 text-warm-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <Card className="p-8 sm:p-12 text-center">
+                <div className="max-w-xs sm:max-w-md mx-auto">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-warm-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                    <svg className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-warm-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                     </svg>
                   </div>
-                  <h3 className="text-2xl font-semibold text-warm-gray-900 mb-3">No products found</h3>
-                  <p className="text-warm-gray-500 mb-6">Try adjusting your search or filter criteria</p>
+                  <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-warm-gray-900 mb-2 sm:mb-3">No products found</h3>
+                  <p className="text-sm sm:text-base text-warm-gray-500 mb-4 sm:mb-6">Try adjusting your search or filter criteria</p>
                   <Button 
                     onClick={() => setFilters({ search: '', category: 'all', minPrice: '', maxPrice: '', discount: 'all' })}
-                    className="bg-etsy-orange hover:bg-etsy-orange-dark text-white"
+                    className="bg-etsy-orange hover:bg-etsy-orange-dark text-white text-sm sm:text-base"
+                    size="sm"
                   >
                     Clear Filters
                   </Button>
@@ -771,15 +680,15 @@ export default function CustomerProducts() {
 
         {/* Purchase Modal */}
         {showPurchaseModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <h2 className="text-xl font-bold mb-4">Checkout</h2>
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+            <div className="bg-white rounded-lg sm:rounded-xl max-w-xs sm:max-w-lg md:max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+              <div className="p-4 sm:p-6">
+                <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Checkout</h2>
                 
                 {/* Cart Items */}
-                <div className="mb-6">
-                  <h3 className="font-semibold mb-2">Order Items</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="mb-4 sm:mb-6">
+                  <h3 className="font-semibold mb-2 text-sm sm:text-base">Order Items</h3>
+                  <div className="grid grid-cols-1 gap-3 sm:gap-4">
                     {cart.map(item => (
                       <div key={item.productId} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 group">
                         <div className="relative w-full h-80 bg-gray-100 overflow-hidden">
@@ -1014,13 +923,16 @@ export default function CustomerProducts() {
           </div>
         )}
         
-        {/* Product Quick View Modal */}
+        {/* Product Details Modal */}
         {selectedProduct && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6">
                 <div className="flex justify-between items-start mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900">{selectedProduct.title}</h2>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">Product Details</h2>
+                    <p className="text-lg text-gray-600 mt-1">{selectedProduct.title}</p>
+                  </div>
                   <button
                     onClick={() => setSelectedProduct(null)}
                     className="text-gray-400 hover:text-gray-600 text-2xl font-bold"

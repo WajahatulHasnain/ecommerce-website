@@ -7,7 +7,13 @@ import Input from "../components/ui/Input";
 import Card from "../components/ui/Card";
 
 export default function AuthPage() {
-  const [isLogin, setIsLogin] = useState(true);
+  // Check URL parameters for auth mode
+  const navigate = useNavigate();
+  const location = useLocation();
+  const urlParams = new URLSearchParams(location.search);
+  const mode = urlParams.get('mode');
+  
+  const [isLogin, setIsLogin] = useState(mode !== 'signup');
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -17,8 +23,6 @@ export default function AuthPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
-  const navigate = useNavigate();
-  const location = useLocation();
   const { login } = useAuth();
 
   // Email validation
@@ -140,23 +144,23 @@ export default function AuthPage() {
     <div className="auth-container">
       {/* Background Decorations */}
       <div className="auth-background-decoration">
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-gradient-to-br from-etsy-orange/10 to-etsy-orange-light/10 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-gradient-to-br from-sage-green/10 to-warm-blue/10 rounded-full blur-3xl"></div>
+        <div className="absolute -top-12 sm:-top-24 -right-12 sm:-right-24 w-48 h-48 sm:w-96 sm:h-96 bg-gradient-to-br from-etsy-orange/10 to-etsy-orange-light/10 rounded-full blur-2xl sm:blur-3xl"></div>
+        <div className="absolute -bottom-12 sm:-bottom-24 -left-12 sm:-left-24 w-48 h-48 sm:w-96 sm:h-96 bg-gradient-to-br from-sage-green/10 to-warm-blue/10 rounded-full blur-2xl sm:blur-3xl"></div>
       </div>
       
-      <div className="relative max-w-md w-full space-y-8">
+      <div className="relative max-w-xs sm:max-w-md w-full space-y-4 sm:space-y-6 md:space-y-8">
         
         {/* Header */}
         <div className="auth-header">
           <div className="auth-icon">
-            <svg className="h-10 w-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="h-8 w-8 sm:h-10 sm:w-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isLogin ? "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" : "M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"} />
             </svg>
           </div>
-          <h1 className="auth-title">
+          <h1 className="auth-title text-xl sm:text-2xl md:text-3xl">
             {isLogin ? 'Welcome Back' : 'Join Us Today'}
           </h1>
-          <p className="auth-subtitle">
+          <p className="auth-subtitle text-sm sm:text-base">
             {isLogin ? 'Sign in to continue your shopping journey' : 'Create your account and start shopping'}
           </p>
         </div>
@@ -198,9 +202,9 @@ export default function AuthPage() {
             )}
 
             {error && (
-              <div className="bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 text-red-700 px-6 py-4 rounded-2xl text-sm font-medium">
+              <div className="bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 text-red-700 px-4 sm:px-6 py-3 sm:py-4 rounded-lg sm:rounded-xl md:rounded-2xl text-xs sm:text-sm font-medium">
                 <div className="flex items-center">
-                  <span className="text-lg mr-2">⚠️</span>
+                  <span className="text-base sm:text-lg mr-2">⚠️</span>
                   {error}
                 </div>
               </div>

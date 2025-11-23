@@ -6,13 +6,22 @@ const CustomLineChart = ({
   color = '#F16623', 
   title = 'Line Chart',
   showGrid = true,
-  strokeWidth = 3
+  strokeWidth = 3,
+  formatPrice = (value) => `$${value.toFixed(2)}`
 }) => {
   // Custom tooltip with glass-morphism styling
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       const value = payload[0].value;
-      const formattedValue = dataKey === 'revenue' ? `$${value.toFixed(2)}` : value.toLocaleString();
+      let formattedValue;
+      
+      if (dataKey === 'revenue') {
+        formattedValue = formatPrice(value);
+      } else if (dataKey === 'orderCount') {
+        formattedValue = `${value.toLocaleString()} orders`;
+      } else {
+        formattedValue = value.toLocaleString();
+      }
       
       return (
         <div className="bg-white/90 backdrop-blur-sm border border-white/20 rounded-lg p-3 shadow-xl">
@@ -74,9 +83,15 @@ const CustomLineChart = ({
             axisLine={false}
             tickLine={false}
             tick={{ fontSize: 12, fill: '#6B7280' }}
-            tickFormatter={(value) => 
-              dataKey === 'revenue' ? `$${value}` : value.toString()
-            }
+            tickFormatter={(value) => {
+              if (dataKey === 'revenue') {
+                return formatPrice(value);
+              } else if (dataKey === 'orderCount') {
+                return value.toString();
+              } else {
+                return value.toString();
+              }
+            }}
           />
           
           <Tooltip content={<CustomTooltip />} />

@@ -1,1 +1,0 @@
-// Backup of the original file with JSX errors

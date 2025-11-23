@@ -13,20 +13,24 @@ export const useGuest = () => {
 export const GuestProvider = ({ children }) => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authModalMessage, setAuthModalMessage] = useState('');
+  const [authType, setAuthType] = useState('signin'); // 'signin' or 'signup'
 
-  const requireAuth = (action = 'perform this action') => {
+  const requireAuth = (action = 'perform this action', type = 'signin') => {
     setAuthModalMessage(`Please sign in to ${action}`);
+    setAuthType(type);
     setShowAuthModal(true);
   };
 
   const closeAuthModal = () => {
     setShowAuthModal(false);
     setAuthModalMessage('');
+    setAuthType('signin');
   };
 
   const value = {
     showAuthModal,
     authModalMessage,
+    authType,
     requireAuth,
     closeAuthModal
   };

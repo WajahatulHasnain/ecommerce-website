@@ -3,14 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { useGuest } from '../context/GuestContext';
 
 const AuthRequiredModal = () => {
-  const { showAuthModal, authModalMessage, closeAuthModal } = useGuest();
+  const { showAuthModal, authModalMessage, authType, closeAuthModal } = useGuest();
   const navigate = useNavigate();
 
   if (!showAuthModal) return null;
 
-  const handleLogin = () => {
+  const handleSignIn = () => {
     closeAuthModal();
-    navigate('/auth');
+    navigate('/auth?mode=signin');
+  };
+
+  const handleSignUp = () => {
+    closeAuthModal();
+    navigate('/auth?mode=signup');
   };
 
   const handleClose = () => {
@@ -35,6 +40,11 @@ const AuthRequiredModal = () => {
               ✨ <strong>Join us to unlock:</strong> Shopping cart, wishlists, order tracking, and exclusive deals!
             </p>
           </div>
+          <div className="mt-3 text-center">
+            <p className="text-xs text-warm-gray-500">
+              Already have an account? Click Sign In • New here? Click Sign Up
+            </p>
+          </div>
         </div>
 
         <div className="modal-actions-auth">
@@ -45,10 +55,16 @@ const AuthRequiredModal = () => {
             Cancel
           </button>
           <button
-            onClick={handleLogin}
+            onClick={handleSignIn}
             className="modal-btn-auth modal-btn-primary-auth"
           >
             Sign In
+          </button>
+          <button
+            onClick={handleSignUp}
+            className="modal-btn-auth bg-green-600 hover:bg-green-700 text-white"
+          >
+            Sign Up
           </button>
         </div>
       </div>
