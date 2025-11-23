@@ -26,16 +26,7 @@ const PORT = process.env.PORT || 5000;
 // Restrict CORS to the frontend host + allow credentials for cookies if needed
 app.use(
   cors({
-    origin: [
-      FRONTEND_URL, 
-      "http://localhost:5173", 
-      "http://localhost:5174", 
-      "http://localhost:5175", 
-      "http://localhost:5176", 
-      "http://localhost:5177", 
-      "http://localhost:5178",
-      /^https:\/\/.*\.vercel\.app$/
-    ],
+    origin: [FRONTEND_URL, "http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176", "http://localhost:5177", "http://localhost:5178"],
     credentials: true,
   })
 );
@@ -124,6 +115,3 @@ process.on("unhandledRejection", (reason, promise) => {
   process.on("SIGINT", gracefulShutdown);
   process.on("SIGTERM", gracefulShutdown);
 })();
-
-// Export the app for Vercel serverless functions
-module.exports = app;

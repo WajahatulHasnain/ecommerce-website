@@ -1,27 +1,14 @@
 {
-  "name": "ecommerce-fullstack-deploy",
+  "name": "ecommerce-starter-fullstack",
   "version": "1.0.0",
-  "description": "MERN E-commerce Application",
+  "private": true,
   "scripts": {
-    "start": "cd backend && npm start",
-    "build": "cd frontend && npm install && npm run build",
-    "postinstall": "cd backend && npm install && cd ../frontend && npm install && npm run build",
-    "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
-    "backend": "cd backend && npm start",
-    "frontend": "cd frontend && npm run dev",
+    "dev": "concurrently \"npm run start\" \"npm run client\"",
+    "start": "cd backend && npm run dev",
+    "client": "cd frontend && npm run dev",
     "install-deps": "cd backend && npm install && cd ../frontend && npm install"
-  },
-  "engines": {
-    "node": "18.x",
-    "npm": "9.x"
   },
   "dependencies": {
     "concurrently": "^7.6.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/WajahatulHasnain/ecommerce-website.git"
-  },
-  "author": "WajahatulHasnain",
-  "license": "MIT"
+  }
 }
