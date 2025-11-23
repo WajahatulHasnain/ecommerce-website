@@ -26,7 +26,7 @@ export default function CustomerLayout() {
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (searchTerm.trim()) {
-      navigate(`/products?search=${encodeURIComponent(searchTerm.trim())}`);
+      navigate(`/customer/products?search=${encodeURIComponent(searchTerm.trim())}`);
     }
   };
 

@@ -27,6 +27,14 @@ export default function CustomerProducts() {
     maxPrice: '',
     discount: 'all'
   });
+  // Temporary filters that user can edit without triggering API calls
+  const [tempFilters, setTempFilters] = useState({
+    search: '',
+    category: 'all',
+    minPrice: '',
+    maxPrice: '',
+    discount: 'all'
+  });
   const [cart, setCart] = useState([]);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -51,14 +59,19 @@ export default function CustomerProducts() {
     const urlParams = new URLSearchParams(location.search);
     const searchQuery = urlParams.get('search');
     if (searchQuery) {
-      setFilters(prev => ({
-        ...prev,
-        search: searchQuery
-      }));
+      const newFilters = {
+        search: searchQuery,
+        category: 'all',
+        minPrice: '',
+        maxPrice: '',
+        discount: 'all'
+      };
+      setFilters(newFilters);
+      setTempFilters(newFilters);
     }
   }, [location.search]);
 
-  // Fetch data when filters change
+  // Fetch data only when actual filters change (not tempFilters)
   useEffect(() => {
     fetchProducts();
     fetchWishlist();
@@ -135,23 +148,43 @@ export default function CustomerProducts() {
     }
   };
 
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    
-    setFilters(prev => ({
+  const handleTempFilterChange = (name, value) => {
+    setTempFilters(prev => ({
       ...prev,
       [name]: value
     }));
   };
 
+  const handleApplyFilters = () => {
+    // Validate price inputs
+    let validatedFilters = { ...tempFilters };
+    
+    // Clean up price values - remove any non-numeric characters except decimal point
+    if (validatedFilters.minPrice) {
+      const cleanMin = validatedFilters.minPrice.replace(/[^0-9.]/g, '');
+      validatedFilters.minPrice = cleanMin && !isNaN(parseFloat(cleanMin)) ? cleanMin : '';
+    }
+    
+    if (validatedFilters.maxPrice) {
+      const cleanMax = validatedFilters.maxPrice.replace(/[^0-9.]/g, '');
+      validatedFilters.maxPrice = cleanMax && !isNaN(parseFloat(cleanMax)) ? cleanMax : '';
+    }
+    
+    // Update actual filters (this will trigger the useEffect to fetch products)
+    setFilters(validatedFilters);
+    setTempFilters(validatedFilters);
+  };
+
   const handleClearAll = () => {
-    setFilters({
+    const clearedFilters = {
       search: '',
       category: 'all',
       minPrice: '',
       maxPrice: '',
       discount: 'all'
-    });
+    };
+    setFilters(clearedFilters);
+    setTempFilters(clearedFilters);
   };
 
   const addToCart = async (product) => {
@@ -443,7 +476,9 @@ export default function CustomerProducts() {
         {/* Mobile-Friendly Search & Filters */}
         <ProductFilters 
           filters={filters}
-          onFilterChange={handleFilterChange}
+          tempFilters={tempFilters}
+          onTempFilterChange={handleTempFilterChange}
+          onApplyFilters={handleApplyFilters}
           onClearAll={handleClearAll}
         />
 

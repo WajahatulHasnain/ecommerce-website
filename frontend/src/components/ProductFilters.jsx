@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import Card from './ui/Card';
+import Button from './ui/Button';
 
-export default function ProductFilters({ filters, onFilterChange, onClearAll }) {
+export default function ProductFilters({ filters, tempFilters, onTempFilterChange, onApplyFilters, onClearAll }) {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const activeFilterCount = [
@@ -12,6 +13,14 @@ export default function ProductFilters({ filters, onFilterChange, onClearAll }) 
     filters.maxPrice
   ].filter(Boolean).length;
 
+  const hasChanges = (
+    tempFilters.search !== filters.search ||
+    tempFilters.category !== filters.category ||
+    tempFilters.discount !== filters.discount ||
+    tempFilters.minPrice !== filters.minPrice ||
+    tempFilters.maxPrice !== filters.maxPrice
+  );
+
   const FilterInputs = () => (
     <>
       {/* Category */}
@@ -19,8 +28,8 @@ export default function ProductFilters({ filters, onFilterChange, onClearAll }) 
         <label className="block text-sm font-medium text-warm-gray-700">Category</label>
         <select
           name="category"
-          value={filters.category}
-          onChange={onFilterChange}
+          value={tempFilters.category}
+          onChange={(e) => onTempFilterChange(e.target.name, e.target.value)}
           className="w-full px-4 py-3 border border-warm-gray-300 rounded-xl focus:ring-2 focus:ring-etsy-orange focus:border-etsy-orange bg-white transition-all duration-200 hover:shadow-sm"
         >
           <option value="all">All Categories</option>
@@ -39,8 +48,8 @@ export default function ProductFilters({ filters, onFilterChange, onClearAll }) 
         <label className="block text-sm font-medium text-warm-gray-700">Deals</label>
         <select
           name="discount"
-          value={filters.discount}
-          onChange={onFilterChange}
+          value={tempFilters.discount}
+          onChange={(e) => onTempFilterChange(e.target.name, e.target.value)}
           className="w-full px-4 py-3 border border-warm-gray-300 rounded-xl focus:ring-2 focus:ring-etsy-orange focus:border-etsy-orange bg-white transition-all duration-200 hover:shadow-sm"
         >
           <option value="all">All Products</option>
@@ -52,13 +61,11 @@ export default function ProductFilters({ filters, onFilterChange, onClearAll }) 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-warm-gray-700">Min Price</label>
         <input
-          type="number"
+          type="text"
           name="minPrice"
-          value={filters.minPrice}
-          onChange={onFilterChange}
-          placeholder="0"
-          min="0"
-          step="0.01"
+          value={tempFilters.minPrice}
+          onChange={(e) => onTempFilterChange(e.target.name, e.target.value)}
+          placeholder="Enter minimum price"
           className="w-full px-4 py-3 border border-warm-gray-300 rounded-xl focus:ring-2 focus:ring-etsy-orange focus:border-etsy-orange transition-all duration-200 hover:shadow-sm"
         />
       </div>
@@ -67,13 +74,11 @@ export default function ProductFilters({ filters, onFilterChange, onClearAll }) 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-warm-gray-700">Max Price</label>
         <input
-          type="number"
+          type="text"
           name="maxPrice"
-          value={filters.maxPrice}
-          onChange={onFilterChange}
-          placeholder="1000"
-          min="0"
-          step="0.01"
+          value={tempFilters.maxPrice}
+          onChange={(e) => onTempFilterChange(e.target.name, e.target.value)}
+          placeholder="Enter maximum price"
           className="w-full px-4 py-3 border border-warm-gray-300 rounded-xl focus:ring-2 focus:ring-etsy-orange focus:border-etsy-orange transition-all duration-200 hover:shadow-sm"
         />
       </div>
@@ -97,14 +102,14 @@ export default function ProductFilters({ filters, onFilterChange, onClearAll }) 
           <input
             type="text"
             name="search"
-            value={filters.search}
-            onChange={onFilterChange}
+            value={tempFilters.search}
+            onChange={(e) => onTempFilterChange('search', e.target.value)}
             placeholder="Search for products..."
             className="w-full pl-10 sm:pl-12 pr-10 sm:pr-12 py-2 sm:py-3 md:py-4 text-sm sm:text-base md:text-lg border-2 border-warm-gray-200 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-etsy-orange focus:border-etsy-orange transition-all duration-200 bg-white shadow-sm hover:shadow-md"
           />
-          {filters.search && (
+          {tempFilters.search && (
             <button
-              onClick={() => onFilterChange({ target: { name: 'search', value: '' } })}
+              onClick={() => onTempFilterChange('search', '')}
               className="absolute inset-y-0 right-0 pr-3 sm:pr-4 flex items-center text-warm-gray-400 hover:text-etsy-orange transition-colors"
             >
               <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -134,8 +139,25 @@ export default function ProductFilters({ filters, onFilterChange, onClearAll }) 
       </div>
 
       {/* Desktop: Inline Filters */}
-      <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-3 sm:mb-4">
-        <FilterInputs />
+      <div className="hidden md:block mb-3 sm:mb-4">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
+          <FilterInputs />
+        </div>
+        
+        {/* Apply Filters Button - Desktop */}
+        <div className="flex justify-center">
+          <Button
+            onClick={onApplyFilters}
+            disabled={!hasChanges}
+            className={`px-8 py-3 text-lg font-semibold rounded-xl transition-all duration-200 ${
+              hasChanges
+                ? 'bg-etsy-orange hover:bg-etsy-orange-dark text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            Apply Filters
+          </Button>
+        </div>
       </div>
 
       {/* Mobile: Filter Drawer */}
@@ -179,8 +201,16 @@ export default function ProductFilters({ filters, onFilterChange, onClearAll }) 
                 Clear All
               </button>
               <button
-                onClick={() => setShowMobileFilters(false)}
-                className="flex-1 px-3 sm:px-4 py-2 sm:py-3 bg-etsy-orange text-white rounded-lg sm:rounded-xl font-medium hover:bg-etsy-orange-dark transition-colors text-sm sm:text-base"
+                onClick={() => {
+                  onApplyFilters();
+                  setShowMobileFilters(false);
+                }}
+                disabled={!hasChanges}
+                className={`flex-1 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl font-medium transition-colors text-sm sm:text-base ${
+                  hasChanges
+                    ? 'bg-etsy-orange text-white hover:bg-etsy-orange-dark'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
               >
                 Apply Filters
               </button>
@@ -205,50 +235,21 @@ export default function ProductFilters({ filters, onFilterChange, onClearAll }) 
             {filters.search && (
               <span className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 bg-etsy-orange/10 text-etsy-orange rounded-full text-xs sm:text-sm">
                 <span className="hidden sm:inline">Search: "</span><span className="sm:hidden">"</span>{filters.search}<span className="hidden sm:inline">"</span><span className="sm:hidden">"</span>
-                <button 
-                  onClick={() => onFilterChange({ target: { name: 'search', value: '' } })}
-                  className="hover:text-etsy-orange-dark transition-colors p-0.5"
-                >
-                  <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
               </span>
             )}
             {filters.category !== 'all' && (
               <span className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 bg-sage/10 text-sage-dark rounded-full text-xs sm:text-sm">
                 {filters.category}
-                <button 
-                  onClick={() => onFilterChange({ target: { name: 'category', value: 'all' } })}
-                  className="ml-1 hover:text-sage transition-colors p-0.5"
-                >
-                  ×
-                </button>
               </span>
             )}
             {filters.discount !== 'all' && (
               <span className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 bg-dusty-rose/10 text-dusty-rose-dark rounded-full text-xs sm:text-sm">
                 On Sale
-                <button 
-                  onClick={() => onFilterChange({ target: { name: 'discount', value: 'all' } })}
-                  className="ml-1 hover:text-dusty-rose transition-colors p-0.5"
-                >
-                  ×
-                </button>
               </span>
             )}
             {(filters.minPrice || filters.maxPrice) && (
               <span className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 bg-lavender/10 text-lavender-dark rounded-full text-xs sm:text-sm">
                 ${filters.minPrice || '0'} - ${filters.maxPrice || '∞'}
-                <button 
-                  onClick={() => {
-                    onFilterChange({ target: { name: 'minPrice', value: '' } });
-                    onFilterChange({ target: { name: 'maxPrice', value: '' } });
-                  }}
-                  className="ml-1 hover:text-lavender transition-colors p-0.5"
-                >
-                  ×
-                </button>
               </span>
             )}
           </div>
