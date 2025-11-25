@@ -151,4 +151,4 @@ exports.resetSettings = async (req, res) => {
       msg: "Failed to reset settings" 
     });
   }
-};
+}; 
