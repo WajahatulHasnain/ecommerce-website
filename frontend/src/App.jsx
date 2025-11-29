@@ -177,8 +177,8 @@ function AppContent() {
         <main>
           <Routes>
           {/* Public Routes */}
-          <Route path="/" element={<Navigate to="/products" replace />} />
-          <Route path="/products" element={<CustomerProducts />} />
+          <Route path="/" element={<Navigate to="/customer/products" replace />} />
+          <Route path="/products" element={<Navigate to="/customer/products" replace />} />
           <Route path="/login" element={<AuthPage />} />
           <Route path="/signup" element={<AuthPage />} />
           <Route path="/auth" element={<AuthPage />} />

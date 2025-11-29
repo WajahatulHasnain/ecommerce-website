@@ -498,15 +498,15 @@
 
 /* ✅ CUSTOMER SPECIFIC STYLING */
 .customer-layout {
-  @apply bg-warm-white min-h-screen;
+  @apply bg-warm-cream min-h-screen;
 }
 
 .customer-sidebar {
-  @apply bg-white shadow-soft border-r border-warm-gray-100;
+  @apply bg-white shadow-lg border-r border-warm-gray-100;
 }
 
 .customer-content {
-  @apply flex-1 p-6 lg:p-8;
+  @apply flex-1 p-4 lg:p-6;
 }
 
 /* ✅ MODAL STYLING */
@@ -606,6 +606,35 @@
   .products-grid-responsive {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   }
+}
+
+/* Sidebar Animations */
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-slideIn {
+  animation: slideIn 0.3s ease-out;
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
 }
 
 @media (min-width: 1536px) {

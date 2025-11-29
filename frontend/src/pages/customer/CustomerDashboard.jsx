@@ -44,8 +44,8 @@ export default function CustomerDashboard() {
       value: dashboardData?.totalOrders || 0,
       icon: '📋',
       gradient: 'from-warm-blue to-lavender',
-      bgColor: 'bg-gradient-to-br from-blue-50 to-purple-50',
-      textColor: 'text-warm-blue',
+      bgColor: 'bg-gradient-to-br from-warm-cream to-warm-gray-50',
+      textColor: 'text-etsy-orange',
       link: '/customer/orders'
     },
     {
@@ -53,8 +53,8 @@ export default function CustomerDashboard() {
       value: dashboardData?.cartCount || 0,
       icon: '🛒',
       gradient: 'from-sage to-success',
-      bgColor: 'bg-gradient-to-br from-green-50 to-emerald-50',
-      textColor: 'text-sage',
+      bgColor: 'bg-gradient-to-br from-etsy-orange-light to-warm-cream',
+      textColor: 'text-etsy-orange',
       link: '/customer/cart'
     },
     {
@@ -62,7 +62,7 @@ export default function CustomerDashboard() {
       value: dashboardData?.wishlistCount || 0,
       icon: '❤️',
       gradient: 'from-dusty-rose to-error',
-      bgColor: 'bg-gradient-to-br from-red-50 to-pink-50',
+      bgColor: 'bg-gradient-to-br from-dusty-rose-light to-warm-cream',
       textColor: 'text-dusty-rose',
       link: '/customer/wishlist'
     },
@@ -71,8 +71,8 @@ export default function CustomerDashboard() {
       value: `$${dashboardData?.totalSpent?.toLocaleString() || '0.00'}`,
       icon: '💰',
       gradient: 'from-etsy-orange to-etsy-orange-dark',
-      bgColor: 'bg-gradient-to-br from-orange-50 to-red-50',
-      textColor: 'text-etsy-orange',
+      bgColor: 'bg-gradient-to-br from-warm-cream to-warm-gray-50',
+      textColor: 'text-warm-gray-700',
       link: '/customer/orders'
     }
   ];
