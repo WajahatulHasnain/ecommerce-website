@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 const Counter = require("./Counter");
 
 const orderSchema = new mongoose.Schema({
+  orderId: {
+    type: String,
+    unique: true,
+    required: false // Will be auto-generated in pre-save hook
+  },
   orderNumber: {
     type: Number,
     unique: true,
@@ -85,12 +90,13 @@ const orderSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Pre-save hook to auto-generate order number
+// Pre-save hook to auto-generate order number and order ID
 orderSchema.pre('save', async function(next) {
   if (this.isNew && !this.orderNumber) {
     try {
       this.orderNumber = await Counter.getNextSequence('order');
-      console.log(`📋 Generated order number: ${this.orderNumber} for order ${this._id}`);
+      this.orderId = `order${this.orderNumber}`;
+      console.log(`📋 Generated order ID: ${this.orderId} (number: ${this.orderNumber}) for order ${this._id}`);
     } catch (error) {
       console.error('❌ Error generating order number:', error);
       return next(error);
@@ -101,7 +107,7 @@ orderSchema.pre('save', async function(next) {
 
 // Virtual for display order ID (Order1, Order2, etc.)
 orderSchema.virtual('displayOrderId').get(function() {
-  return `Order${this.orderNumber}`;
+  return this.orderId || `order${this.orderNumber}`;
 });
 
 // Ensure virtual fields are serialized

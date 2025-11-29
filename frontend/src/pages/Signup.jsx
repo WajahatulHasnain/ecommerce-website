@@ -124,37 +124,44 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-8">
-      <div className="w-full max-w-md space-y-6">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sage-light via-etsy-cream to-dusty-rose-light px-4 py-12">
+      {/* Background Decorations */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-24 -left-24 w-96 h-96 bg-gradient-to-br from-sage/10 to-etsy-orange/10 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-gradient-to-br from-dusty-rose/10 to-warm-blue/10 rounded-full blur-3xl"></div>
+      </div>
+      
+      <div className="relative max-w-md w-full space-y-8">
         
         {/* Header */}
         <div className="text-center">
-          <div className="mx-auto h-16 w-16 bg-etsy-orange rounded-2xl flex items-center justify-center mb-4 shadow-sm">
-            <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="mx-auto h-20 w-20 bg-gradient-to-br from-sage via-etsy-orange to-dusty-rose rounded-3xl flex items-center justify-center mb-6 shadow-large transform hover:scale-105 transition-transform duration-300">
+            <svg className="h-10 w-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h1>
-          <p className="text-gray-600">Sign up to start shopping</p>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-warm-gray-800 via-sage to-etsy-orange bg-clip-text text-transparent mb-3">Join Our Community</h1>
+          <p className="text-warm-gray-600 text-lg">Create your customer account and start shopping</p>
         </div>
         
         {/* Signup Form */}
-        <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-200">
-          <form onSubmit={handleSubmit} className="space-y-5">
+        <Card variant="elevated" className="p-8 shadow-xl border-0 bg-white/95 backdrop-blur-sm rounded-3xl">
+          <form onSubmit={handleSubmit} className="space-y-6">
             
             {/* Error Messages */}
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md text-sm">
+              <div className="bg-gradient-to-r from-red-50 to-dusty-rose-light border border-dusty-rose/30 text-red-700 px-6 py-4 rounded-2xl text-sm font-medium">
                 <div className="flex items-center">
-                  <span className="mr-2">!</span>
+                  <span className="text-lg mr-2">⚠️</span>
                   {error}
                 </div>
               </div>
             )}
             
             {/* Name Input */}
-            <div>
+            <div className="space-y-2">
               <Input
+                variant="modern"
                 label="Full Name"
                 type="text"
                 name="name"
@@ -163,12 +170,19 @@ export default function Signup() {
                 onChange={handleChange}
                 error={validationErrors.name}
                 required
+                className="transition-all duration-300 rounded-2xl border-warm-gray-200 focus:border-sage focus:ring-sage/20"
+                icon={
+                  <svg className="h-5 w-5 text-warm-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                }
               />
             </div>
             
             {/* Email Input */}
-            <div>
+            <div className="space-y-2">
               <Input
+                variant="modern"
                 label="Email Address"
                 type="email"
                 name="email"
@@ -177,12 +191,20 @@ export default function Signup() {
                 onChange={handleChange}
                 error={validationErrors.email}
                 required
+                className="transition-all duration-300 rounded-2xl border-warm-gray-200 focus:border-sage focus:ring-sage/20"
+                icon={
+                  <svg className="h-5 w-5 text-warm-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                  </svg>
+                }
               />
+              <p className="text-xs text-warm-gray-500 mt-1">📧 Must contain @ symbol</p>
             </div>
             
             {/* Password Input */}
-            <div>
+            <div className="space-y-2">
               <Input
+                variant="modern"
                 label="Password"
                 type="password"
                 name="password"
@@ -191,30 +213,36 @@ export default function Signup() {
                 onChange={handleChange}
                 error={validationErrors.password}
                 required
+                className="transition-all duration-300 rounded-2xl border-warm-gray-200 focus:border-sage focus:ring-sage/20"
+                icon={
+                  <svg className="h-5 w-5 text-warm-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                }
               />
               {/* Password Requirements */}
-              <div className="bg-gray-50 rounded-md p-3 mt-2">
-                <p className="text-xs font-medium text-gray-700 mb-2">Password requirements:</p>
+              <div className="bg-gradient-to-r from-warm-gray-50 to-sage-light/20 rounded-xl p-3 mt-2">
+                <p className="text-xs font-semibold text-warm-gray-600 mb-2">Password must include:</p>
                 <div className="grid grid-cols-2 gap-1 text-xs">
-                  <div className={`flex items-center ${formData.password.length >= 8 ? 'text-green-600' : 'text-gray-400'}`}>
-                    <span className="mr-1">{formData.password.length >= 8 ? '✓' : '○'}</span>
+                  <div className={`flex items-center ${formData.password.length >= 8 ? 'text-green-600' : 'text-warm-gray-400'}`}>
+                    <span className="mr-1">{formData.password.length >= 8 ? '✅' : '⚪'}</span>
                     8+ characters
                   </div>
-                  <div className={`flex items-center ${/[A-Z]/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}`}>
-                    <span className="mr-1">{/[A-Z]/.test(formData.password) ? '✓' : '○'}</span>
+                  <div className={`flex items-center ${/[A-Z]/.test(formData.password) ? 'text-green-600' : 'text-warm-gray-400'}`}>
+                    <span className="mr-1">{/[A-Z]/.test(formData.password) ? '✅' : '⚪'}</span>
                     Uppercase
                   </div>
-                  <div className={`flex items-center ${/[a-z]/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}`}>
-                    <span className="mr-1">{/[a-z]/.test(formData.password) ? '✓' : '○'}</span>
+                  <div className={`flex items-center ${/[a-z]/.test(formData.password) ? 'text-green-600' : 'text-warm-gray-400'}`}>
+                    <span className="mr-1">{/[a-z]/.test(formData.password) ? '✅' : '⚪'}</span>
                     Lowercase
                   </div>
-                  <div className={`flex items-center ${/\d/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}`}>
-                    <span className="mr-1">{/\d/.test(formData.password) ? '✓' : '○'}</span>
+                  <div className={`flex items-center ${/\d/.test(formData.password) ? 'text-green-600' : 'text-warm-gray-400'}`}>
+                    <span className="mr-1">{/\d/.test(formData.password) ? '✅' : '⚪'}</span>
                     Numbers
                   </div>
-                  <div className={`flex items-center col-span-2 ${/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}`}>
-                    <span className="mr-1">{/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) ? '✓' : '○'}</span>
-                    Special characters
+                  <div className={`flex items-center col-span-2 ${/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) ? 'text-green-600' : 'text-warm-gray-400'}`}>
+                    <span className="mr-1">{/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) ? '✅' : '⚪'}</span>
+                    Symbols (!@#$%^&*)
                   </div>
                 </div>
                 {passwordStrength && (
@@ -223,15 +251,19 @@ export default function Signup() {
                     passwordStrength.strength === 'medium' ? 'text-yellow-600' :
                     'text-red-600'
                   }`}>
-                    {passwordStrength.message}
+                    {passwordStrength.strength === 'strong' && '💪'}
+                    {passwordStrength.strength === 'medium' && '👍'}
+                    {passwordStrength.strength === 'weak' && '⚠️'}
+                    {' '}{passwordStrength.message}
                   </div>
                 )}
               </div>
             </div>
             
             {/* Confirm Password Input */}
-            <div>
+            <div className="space-y-2">
               <Input
+                variant="modern"
                 label="Confirm Password"
                 type="password"
                 name="confirmPassword"
@@ -240,13 +272,33 @@ export default function Signup() {
                 onChange={handleChange}
                 error={validationErrors.confirmPassword}
                 required
+                className="transition-all duration-300 rounded-2xl border-warm-gray-200 focus:border-sage focus:ring-sage/20"
+                icon={
+                  <svg className="h-5 w-5 text-warm-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                }
               />
+            </div>
+            
+            {/* Account Type Info */}
+            <div className="bg-gradient-to-r from-sage-light/30 to-etsy-orange-light/20 border border-sage/20 rounded-2xl p-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-sage to-etsy-orange rounded-xl flex items-center justify-center">
+                  <span className="text-2xl">🛍️</span>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-warm-gray-800">Customer Account</p>
+                  <p className="text-xs text-warm-gray-600">Browse products, make purchases, and manage your orders</p>
+                </div>
+              </div>
             </div>
             
             {/* Signup Button */}
             <Button
+              variant="primary"
               type="submit"
-              className="w-full bg-etsy-orange hover:bg-etsy-orange-dark text-white font-medium py-3 rounded-md transition-colors mt-6"
+              className="w-full bg-gradient-to-r from-sage via-etsy-orange to-dusty-rose hover:from-sage-dark hover:via-etsy-orange-dark hover:to-dusty-rose-dark text-white font-semibold py-4 px-6 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-medium hover:shadow-large"
               disabled={loading || formData.password !== formData.confirmPassword || !passwordStrength.isValid}
             >
               {loading ? (
@@ -255,41 +307,57 @@ export default function Signup() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Creating account...
+                  Creating your account...
                 </div>
               ) : (
-                "Create Account"
+                <div className="flex items-center justify-center">
+                  <span className="mr-2">🚀</span>
+                  Create My Account
+                </div>
               )}
             </Button>
-          </form>
-          
-          {/* Divider */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200"></div>
+            
+            {/* OR Divider */}
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-warm-gray-200"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-white text-warm-gray-500 font-medium">OR</span>
+              </div>
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">or</span>
-            </div>
-          </div>
-          
-          {/* Guest Mode Button */}
-          <Link
-            to="/customer/products"
-            className="w-full block text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 rounded-md transition-colors"
-          >
-            Continue as Guest
-          </Link>
-          
-          {/* Login Link */}
-          <div className="text-center mt-6">
-            <span className="text-gray-600">Already have an account? </span>
+            
+            {/* Guest Mode Button - Prominent */}
             <Link
-              to="/login"
-              className="text-etsy-orange hover:text-etsy-orange-dark font-medium hover:underline"
+              to="/customer/products"
+              className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-4 px-6 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl flex items-center justify-center space-x-3"
             >
-              Sign in
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <span className="text-lg">Browse as Guest</span>
+              <span className="text-2xl">🛍️</span>
             </Link>
+            
+            {/* Login Link */}
+            <div className="text-center pt-6 border-t border-warm-gray-100">
+              <span className="text-warm-gray-600">Already have an account? </span>
+              <Link
+                to="/login"
+                className="text-etsy-orange hover:text-etsy-orange-dark font-semibold transition-colors hover:underline"
+              >
+                Sign In
+              </Link>
+            </div>
+          </form>
+        </Card>
+
+        {/* Info */}
+        <div className="text-center">
+          <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 border border-warm-gray-100">
+            <p className="text-sm text-warm-gray-600 font-medium">
+              🛡️ Secure registration • 🛍️ Start shopping immediately
+            </p>
           </div>
         </div>
       </div>

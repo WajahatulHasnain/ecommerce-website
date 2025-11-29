@@ -12,16 +12,17 @@ export default function AdminAnalytics() {
   const [trendPeriod, setTrendPeriod] = useState('total');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [newDataAlert, setNewDataAlert] = useState(false);
 
   useEffect(() => {
     fetchAnalytics(trendPeriod);
     
-    // Set up auto-refresh every 30 seconds if enabled
+    // Set up real-time auto-refresh every 15 seconds for better performance
     let refreshInterval;
     if (autoRefresh) {
       refreshInterval = setInterval(() => {
-        fetchAnalytics(trendPeriod, true); // Silent refresh
-      }, 30000);
+        fetchAnalytics(trendPeriod, true); // Silent refresh for real-time updates
+      }, 15000); // Reduced to 15 seconds for more responsive updates
     }
     
     return () => {
@@ -40,8 +41,30 @@ export default function AdminAnalytics() {
       });
       
       if (response.data.success) {
-        setAnalyticsData(response.data.data);
+        const newData = response.data.data;
+        
+        // Check for new data if we have previous data
+        if (analyticsData && silent) {
+          const hasNewOrders = newData.ordersCount > analyticsData.ordersCount;
+          const hasNewRevenue = newData.totalSales > analyticsData.totalSales;
+          
+          if (hasNewOrders || hasNewRevenue) {
+            setNewDataAlert(true);
+            // Auto-hide alert after 5 seconds
+            setTimeout(() => setNewDataAlert(false), 5000);
+          }
+        }
+        
+        setAnalyticsData(newData);
         setLastUpdated(new Date());
+        
+        console.log('📊 Real-time Analytics Update:', {
+          period,
+          orders: newData.ordersCount,
+          revenue: newData.totalSales,
+          dataPoints: newData.salesData?.length,
+          silent
+        });
       }
     } catch (error) {
       console.error('Failed to fetch analytics:', error);
@@ -199,6 +222,22 @@ export default function AdminAnalytics() {
 
   return (
     <div className="space-y-8 bg-gradient-to-br from-warm-gray-50 to-sage-green/5 min-h-screen p-6">
+      {/* Real-time Data Alert */}
+      {newDataAlert && (
+        <div className="fixed top-4 right-4 z-50 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-lg shadow-xl border border-green-400 animate-bounce">
+          <div className="flex items-center space-x-2">
+            <span className="text-xl">🔔</span>
+            <span className="font-medium">New activity detected!</span>
+            <button 
+              onClick={() => setNewDataAlert(false)}
+              className="ml-3 text-green-100 hover:text-white"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header with Trend Selector */}
       <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-6">
         <div className="space-y-2">
@@ -263,7 +302,7 @@ export default function AdminAnalytics() {
         </div>
       </div>
 
-      {/* Enhanced Period Summary */}
+      {/* Enhanced Period Summary with Today's Data */}
       <Card className="p-6 bg-gradient-to-r from-etsy-orange/10 via-white/50 to-sage-green/10 border border-etsy-orange/20 backdrop-blur-sm">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex items-center space-x-6">
@@ -273,11 +312,13 @@ export default function AdminAnalytics() {
               </div>
               <div>
                 <span className="font-semibold text-lg">
-                  {trendPeriod === 'total' ? 'All Time' : 
-                   trendPeriod === 'weekly' ? 'Last 7 Days' : 'Last 30 Days'} Performance
+                  {trendPeriod === 'total' ? `All Time Performance` : 
+                   trendPeriod === 'weekly' ? 'Last 7 Days Performance' : 'Last 30 Days Performance'}
                 </span>
                 <p className="text-sm text-gray-600 mt-1">
-                  Data granularity: <span className="font-medium">{analyticsData.granularity || 'daily'}</span>
+                  Data from {analyticsData.dataRange ? new Date(analyticsData.dataRange.start).toLocaleDateString() : 'day 1'} 
+                  {' to '} {analyticsData.dataRange ? new Date(analyticsData.dataRange.end).toLocaleDateString() : 'today'}
+                  {' • '}<span className="font-medium">{analyticsData.granularity || 'daily'}</span> granularity
                 </p>
               </div>
             </div>
@@ -295,6 +336,67 @@ export default function AdminAnalytics() {
                 {formatPrice((analyticsData.trends?.[trendPeriod]?.revenue || 0))}
               </div>
               <div className="text-xs text-gray-500 uppercase tracking-wide">Period Revenue</div>
+            </div>
+            <div className="w-px h-8 bg-gray-300"></div>
+            <div className="text-center">
+              <div className="text-lg font-semibold text-blue-500">
+                {analyticsData.dataRange?.totalDays || 0} days
+              </div>
+              <div className="text-xs text-gray-500 uppercase tracking-wide">Data Coverage</div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Today's Real-time Stats */}
+        {analyticsData.todayStats && (
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
+                  <span className="text-sm font-medium text-gray-700">Today's Activity</span>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-etsy-orange">
+                    {formatPrice(analyticsData.todayStats.revenue)}
+                  </div>
+                  <div className="text-xs text-gray-500">Revenue Today</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-sage-green">
+                    {analyticsData.todayStats.orders}
+                  </div>
+                  <div className="text-xs text-gray-500">Orders Today</div>
+                </div>
+                {analyticsData.todayStats.lastOrder && (
+                  <div className="text-center">
+                    <div className="text-sm font-medium text-blue-500">
+                      {new Date(analyticsData.todayStats.lastOrder).toLocaleTimeString()}
+                    </div>
+                    <div className="text-xs text-gray-500">Last Order</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Real-time Status Indicator */}
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className={`w-3 h-3 rounded-full ${autoRefresh ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
+              <span className="text-sm text-gray-600">
+                Real-time updates: <span className="font-medium">{autoRefresh ? 'ON' : 'OFF'}</span>
+              </span>
+              {lastUpdated && (
+                <span className="text-sm text-gray-500">
+                  • Last sync: {lastUpdated.toLocaleTimeString()}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center space-x-2 text-sm text-gray-500">
+              <span>🔄 Updates every 15s</span>
             </div>
           </div>
         </div>
