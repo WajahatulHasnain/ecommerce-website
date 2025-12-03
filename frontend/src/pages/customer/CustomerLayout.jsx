@@ -3,7 +3,6 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 export default function CustomerLayout() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false); // Vertical sidebar state
   const [searchTerm, setSearchTerm] = useState('');
   const { user, logout } = useAuth();
@@ -101,14 +100,6 @@ export default function CustomerLayout() {
                   <span className="sm:hidden">Exit</span>
                 </button>
               </div>
-
-              {/* Mobile Menu Button */}
-              <button
-                className="lg:hidden p-1 sm:p-2 text-warm-gray-600 hover:text-etsy-orange"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              >
-                <span className="text-lg sm:text-xl">☰</span>
-              </button>
             </div>
           </div>
         </div>
@@ -125,25 +116,6 @@ export default function CustomerLayout() {
             />
           </form>
         </div>
-
-        {/* Mobile Navigation */}
-        {mobileMenuOpen && (
-          <div className="lg:hidden bg-white border-t border-warm-gray-100">
-            <nav className="px-4 py-4 space-y-1 sm:space-y-2">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className="nav-link flex items-center space-x-2 sm:space-x-3 px-3 py-2 rounded-xl text-sm sm:text-base"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <span>{item.icon}</span>
-                  <span>{item.name}</span>
-                </Link>
-              ))}
-            </nav>
-          </div>
-        )}
       </header>
 
       {/* Main Layout with Sidebar */}

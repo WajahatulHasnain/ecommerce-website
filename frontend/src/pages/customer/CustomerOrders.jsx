@@ -214,15 +214,10 @@ export default function CustomerOrders() {
               <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
                 <Button
                   onClick={() => setSelectedOrder(null)}
-                  className="px-6 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50"
+                  className="px-8 py-3 bg-etsy-orange text-white hover:bg-etsy-orange-dark transition-colors font-medium rounded-lg"
                 >
                   Close
                 </Button>
-                {selectedOrder.status !== 'delivered' && selectedOrder.status !== 'cancelled' && (
-                  <Button className="px-6 py-2 bg-red-600 text-white hover:bg-red-700">
-                    Cancel Order
-                  </Button>
-                )}
               </div>
             </div>
           </div>

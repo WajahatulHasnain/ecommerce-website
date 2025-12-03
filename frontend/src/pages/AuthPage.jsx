@@ -2,9 +2,6 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import api from "../utils/api";
-import Button from "../components/ui/Button";
-import Input from "../components/ui/Input";
-import Card from "../components/ui/Card";
 
 export default function AuthPage() {
   // Check URL parameters for auth mode
@@ -23,7 +20,7 @@ export default function AuthPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
-  const { login } = useAuth();
+  const { login, adminLogin } = useAuth();
 
   // Email validation
   const validateEmail = (email) => {
@@ -31,26 +28,31 @@ export default function AuthPage() {
     return emailRegex.test(email);
   };
 
-  // Password validation
+  // Enhanced Password validation with individual requirements
   const validatePassword = (password) => {
-    const minLength = password.length >= 8;
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasLowerCase = /[a-z]/.test(password);
-    const hasNumbers = /\d/.test(password);
-    const hasSymbols = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+    const requirements = {
+      minLength: password.length >= 8,
+      hasUpperCase: /[A-Z]/.test(password),
+      hasLowerCase: /[a-z]/.test(password),
+      hasNumbers: /\d/.test(password),
+      hasSymbols: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)
+    };
     
-    const score = [minLength, hasUpperCase, hasLowerCase, hasNumbers, hasSymbols].filter(Boolean).length;
+    const metCount = Object.values(requirements).filter(Boolean).length;
+    const isStrong = metCount === 5; // All requirements must be met
     
-    if (score < 3) return { isValid: false, strength: 'weak' };
-    if (score < 4) return { isValid: true, strength: 'medium' };
-    return { isValid: true, strength: 'strong' };
+    return {
+      requirements,
+      isStrong,
+      strength: isStrong ? 'strong' : metCount >= 3 ? 'medium' : 'weak'
+    };
   };
 
   const validateForm = () => {
     const errors = {};
     
     if (!isLogin && !formData.name.trim()) {
-      errors.name = "Name is required";
+      errors.name = "Full name is required";
     }
     
     if (!formData.email.trim()) {
@@ -59,10 +61,13 @@ export default function AuthPage() {
       errors.email = "Please enter a valid email address";
     }
     
-    if (!formData.password.trim()) {
+    if (!formData.password) {
       errors.password = "Password is required";
-    } else if (!isLogin && !validatePassword(formData.password).isValid) {
-      errors.password = "Password must be at least 8 characters with mixed-case letters, numbers, and symbols";
+    } else if (!isLogin) {
+      const passwordCheck = validatePassword(formData.password);
+      if (!passwordCheck.isStrong) {
+        errors.password = "Password must meet all requirements for strong security";
+      }
     }
     
     if (!isLogin && formData.password !== formData.confirmPassword) {
@@ -74,58 +79,64 @@ export default function AuthPage() {
   };
 
   const handleChange = (e) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
-    setError("");
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
     
-    // Clear specific field validation error when user types
-    if (validationErrors[e.target.name]) {
-      setValidationErrors(prev => ({
-        ...prev,
-        [e.target.name]: ""
-      }));
+    // Clear validation error when user starts typing
+    if (validationErrors[name]) {
+      setValidationErrors({ ...validationErrors, [name]: "" });
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
     
     if (!validateForm()) return;
     
     setLoading(true);
-    
+    setError("");
+
     try {
-      const endpoint = isLogin ? "/auth/login" : "/auth/signup";
-      const payload = isLogin 
-        ? { email: formData.email, password: formData.password }
-        : { name: formData.name, email: formData.email, password: formData.password };
+      let response;
+      const email = formData.email.toLowerCase().trim();
       
-      console.log(`${isLogin ? '🔐' : '📝'} Attempting ${isLogin ? 'login' : 'signup'}...`);
-      
-      const res = await api.post(endpoint, payload);
-      
-      if (res.data.success) {
-        login(res.data.token, res.data.user);
-        
-        // Enhanced redirect logic - Admin auto-redirect to dashboard
-        let redirectTo;
-        if (res.data.user.role === 'admin') {
-          redirectTo = '/admin/dashboard';
-        } else {
-          redirectTo = location.state?.from?.pathname || '/products';
-        }
-        
-        console.log(`✅ ${isLogin ? 'Login' : 'Signup'} successful, redirecting ${res.data.user.role} to:`, redirectTo);
-        navigate(redirectTo, { replace: true });
+      if (isLogin) {
+        // Single authentication endpoint for both admin and customer
+        response = await api.post("/auth/login", {
+          email: formData.email,
+          password: formData.password,
+        });
       } else {
-        setError(res.data.msg || `${isLogin ? 'Login' : 'Registration'} failed`);
+        // Signup (customers only)
+        response = await api.post("/auth/signup", {
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+        });
+      }
+
+      if (response.data.success) {
+        const { token, user } = response.data;
+        
+        // Store token and update context  
+        if (user.role === 'admin') {
+          localStorage.setItem('adminToken', token);
+          adminLogin(token, user);
+          navigate('/admin/dashboard');
+        } else {
+          localStorage.setItem('token', token);
+          login(token, user);
+          navigate('/customer/products');
+        }
       }
     } catch (err) {
-      console.error(`❌ ${isLogin ? 'Login' : 'Signup'} error:`, err);
-      setError(err.response?.data?.msg || `${isLogin ? 'Invalid email or password' : 'Registration failed. Please try again.'}`);
+      console.error('Auth error:', err);
+      setError(
+        err.response?.data?.msg || 
+        err.response?.data?.message || 
+        err.response?.data?.error || 
+        'Authentication failed. Please check your credentials.'
+      );
     } finally {
       setLoading(false);
     }
@@ -141,258 +152,245 @@ export default function AuthPage() {
   const passwordValidation = validatePassword(formData.password);
 
   return (
-    <div className="auth-container">
-      {/* Background Decorations */}
-      <div className="auth-background-decoration">
-        <div className="absolute -top-12 sm:-top-24 -right-12 sm:-right-24 w-48 h-48 sm:w-96 sm:h-96 bg-gradient-to-br from-etsy-orange/10 to-etsy-orange-light/10 rounded-full blur-2xl sm:blur-3xl"></div>
-        <div className="absolute -bottom-12 sm:-bottom-24 -left-12 sm:-left-24 w-48 h-48 sm:w-96 sm:h-96 bg-gradient-to-br from-sage-green/10 to-warm-blue/10 rounded-full blur-2xl sm:blur-3xl"></div>
-      </div>
-      
-      <div className="relative max-w-xs sm:max-w-md w-full space-y-4 sm:space-y-6 md:space-y-8">
+    <div className="min-h-screen bg-warm-cream flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
         
-        {/* Header */}
-        <div className="auth-header">
-          <div className="auth-icon">
-            <svg className="h-8 w-8 sm:h-10 sm:w-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        {/* Simple Header */}
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 bg-etsy-orange rounded-full flex items-center justify-center mb-6">
+            <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isLogin ? "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" : "M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"} />
             </svg>
           </div>
-          <h1 className="auth-title text-xl sm:text-2xl md:text-3xl">
-            {isLogin ? 'Welcome Back' : 'Join Us Today'}
-          </h1>
-          <p className="auth-subtitle text-sm sm:text-base">
-            {isLogin ? 'Sign in to continue your shopping journey' : 'Create your account and start shopping'}
+          <h2 className="text-3xl font-bold text-warm-gray-900 mb-2">
+            {isLogin ? 'Welcome back' : 'Create account'}
+          </h2>
+          <p className="text-warm-gray-600 text-sm">
+            {isLogin ? 'Sign in to your account' : 'Join us today and start shopping'}
           </p>
         </div>
 
-        {/* Mode Toggle */}
-        <div className="auth-toggle">
-          <button
-            type="button"
-            onClick={() => !isLogin && switchMode()}
-            className={`auth-toggle-btn ${
-              isLogin ? 'active' : 'inactive'
-            }`}
-          >
-            Sign In
-          </button>
-          <button
-            type="button"
-            onClick={() => isLogin && switchMode()}
-            className={`auth-toggle-btn ${
-              !isLogin ? 'active' : 'inactive'
-            }`}
-          >
-            Sign Up
-          </button>
-        </div>
-        
-        {/* Auth Form */}
-        <Card variant="elevated" className="auth-card">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            
-            {/* Success/Error Messages */}
-            {location.state?.message && (
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 text-green-700 px-6 py-4 rounded-2xl text-sm font-medium">
-                <div className="flex items-center">
-                  <span className="text-lg mr-2">✅</span>
-                  {location.state.message}
-                </div>
+        {/* Clean Form */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          
+          {/* Success/Error Messages */}
+          {location.state?.message && (
+            <div className="bg-green-50 border-l-4 border-green-400 p-4">
+              <div className="flex">
+                <span className="text-green-400 mr-3">✓</span>
+                <p className="text-green-700 text-sm">{location.state.message}</p>
               </div>
-            )}
-
-            {error && (
-              <div className="bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 text-red-700 px-4 sm:px-6 py-3 sm:py-4 rounded-lg sm:rounded-xl md:rounded-2xl text-xs sm:text-sm font-medium">
-                <div className="flex items-center">
-                  <span className="text-base sm:text-lg mr-2">⚠️</span>
-                  {error}
-                </div>
-              </div>
-            )}
-            
-            {/* Name Input (Signup only) */}
-            {!isLogin && (
-              <div className="space-y-2">
-                <Input
-                  variant="modern"
-                  label="Full Name"
-                  type="text"
-                  name="name"
-                  placeholder="Enter your full name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  error={validationErrors.name}
-                  required
-                  className="auth-input"
-                  icon={
-                    <svg className="h-5 w-5 text-warm-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  }
-                />
-              </div>
-            )}
-            
-            {/* Email Input */}
-            <div className="space-y-2">
-              <Input
-                variant="modern"
-                label="Email Address"
-                type="email"
-                name="email"
-                placeholder="your@email.com"
-                value={formData.email}
-                onChange={handleChange}
-                error={validationErrors.email}
-                required
-                className="auth-input"
-                icon={
-                  <svg className="h-5 w-5 text-warm-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                  </svg>
-                }
-              />
             </div>
-            
-            {/* Password Input */}
-            <div className="space-y-2">
-              <Input
-                variant="modern"
-                label="Password"
-                type="password"
-                name="password"
-                placeholder={isLogin ? "Enter your password" : "Create a secure password"}
-                value={formData.password}
-                onChange={handleChange}
-                error={validationErrors.password}
-                required
-                className="auth-input"
-                icon={
-                  <svg className="h-5 w-5 text-warm-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                }
-              />
+          )}
 
-              {/* Password Requirements (Signup only) */}
-              {!isLogin && formData.password && (
-                <div className="bg-gradient-to-r from-warm-gray-50 to-warm-cream rounded-xl p-3 mt-2">
-                  <p className="text-xs font-semibold text-warm-gray-600 mb-2">Password Requirements:</p>
-                  <div className="grid grid-cols-2 gap-1 text-xs">
-                    <div className={`flex items-center ${formData.password.length >= 8 ? 'text-green-600' : 'text-warm-gray-400'}`}>
-                      <span className="mr-1">{formData.password.length >= 8 ? '✅' : '⚪'}</span>
-                      8+ characters
-                    </div>
-                    <div className={`flex items-center ${/[A-Z]/.test(formData.password) ? 'text-green-600' : 'text-warm-gray-400'}`}>
-                      <span className="mr-1">{/[A-Z]/.test(formData.password) ? '✅' : '⚪'}</span>
-                      Uppercase
-                    </div>
-                    <div className={`flex items-center ${/[a-z]/.test(formData.password) ? 'text-green-600' : 'text-warm-gray-400'}`}>
-                      <span className="mr-1">{/[a-z]/.test(formData.password) ? '✅' : '⚪'}</span>
-                      Lowercase
-                    </div>
-                    <div className={`flex items-center ${/\d/.test(formData.password) ? 'text-green-600' : 'text-warm-gray-400'}`}>
-                      <span className="mr-1">{/\d/.test(formData.password) ? '✅' : '⚪'}</span>
-                      Numbers
-                    </div>
-                  </div>
-                  <div className={`mt-2 text-xs font-medium ${
-                    passwordValidation.strength === 'strong' ? 'text-green-600' :
-                    passwordValidation.strength === 'medium' ? 'text-yellow-600' :
-                    'text-red-600'
+          {error && (
+            <div className="bg-red-50 border-l-4 border-red-400 p-4">
+              <div className="flex">
+                <span className="text-red-400 mr-3">!</span>
+                <p className="text-red-700 text-sm">{error}</p>
+              </div>
+            </div>
+          )}
+          
+          {/* Name Field (Signup only) */}
+          {!isLogin && (
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-warm-gray-700 mb-2">
+                Full Name
+              </label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                required={!isLogin}
+                placeholder="Enter your full name"
+                value={formData.name}
+                onChange={handleChange}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-etsy-orange focus:border-etsy-orange transition-colors ${
+                  validationErrors.name ? 'border-red-300' : 'border-gray-300'
+                }`}
+              />
+              {validationErrors.name && (
+                <p className="mt-1 text-sm text-red-600">{validationErrors.name}</p>
+              )}
+            </div>
+          )}
+          
+          {/* Email Field */}
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-warm-gray-700 mb-2">
+              Email Address
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              required
+              placeholder="your@email.com"
+              value={formData.email}
+              onChange={handleChange}
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-etsy-orange focus:border-etsy-orange transition-colors ${
+                validationErrors.email ? 'border-red-300' : 'border-gray-300'
+              }`}
+            />
+            {validationErrors.email && (
+              <p className="mt-1 text-sm text-red-600">{validationErrors.email}</p>
+            )}
+          </div>
+
+          {/* Password Field */}
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-warm-gray-700 mb-2">
+              Password
+            </label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              required
+              placeholder="Enter your password"
+              value={formData.password}
+              onChange={handleChange}
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-etsy-orange focus:border-etsy-orange transition-colors ${
+                validationErrors.password ? 'border-red-300' : 'border-gray-300'
+              }`}
+            />
+            {validationErrors.password && (
+              <p className="mt-1 text-sm text-red-600">{validationErrors.password}</p>
+            )}
+            
+            {/* Password Requirements (Signup only) */}
+            {!isLogin && formData.password && (
+              <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-gray-600">Password Requirements:</span>
+                  <div className={`px-2 py-1 text-xs rounded ${
+                    passwordValidation.isStrong ? 'bg-green-100 text-green-800' :
+                    passwordValidation.strength === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-red-100 text-red-800'
                   }`}>
-                    Password Strength: {passwordValidation.strength.toUpperCase()}
-                    {passwordValidation.strength === 'strong' && ' 💪'}
-                    {passwordValidation.strength === 'medium' && ' 👍'}
-                    {passwordValidation.strength === 'weak' && ' ⚠️'}
+                    {passwordValidation.strength}
                   </div>
                 </div>
-              )}
-            </div>
-
-            {/* Confirm Password (Signup only) */}
-            {!isLogin && (
-              <div className="space-y-2">
-                <Input
-                  variant="modern"
-                  label="Confirm Password"
-                  type="password"
-                  name="confirmPassword"
-                  placeholder="Confirm your password"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  error={validationErrors.confirmPassword}
-                  required
-                  className="auth-input"
-                  icon={
-                    <svg className="h-5 w-5 text-warm-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  }
-                />
-              </div>
-            )}
-
-            {/* Account Type Info (Signup only) */}
-            {!isLogin && (
-              <div className="auth-info-card">
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-etsy-orange to-etsy-orange-dark rounded-xl flex items-center justify-center">
-                    <span className="text-2xl">🛍️</span>
+                <div className="space-y-1">
+                  <div className={`flex items-center text-xs ${
+                    passwordValidation.requirements.minLength ? 'text-green-600' : 'text-gray-400'
+                  }`}>
+                    <span className="mr-2">{passwordValidation.requirements.minLength ? '✓' : '○'}</span>
+                    At least 8 characters
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-warm-gray-800">Customer Account</p>
-                    <p className="text-xs text-warm-gray-600">Browse products, make purchases, and manage orders</p>
+                  <div className={`flex items-center text-xs ${
+                    passwordValidation.requirements.hasUpperCase ? 'text-green-600' : 'text-gray-400'
+                  }`}>
+                    <span className="mr-2">{passwordValidation.requirements.hasUpperCase ? '✓' : '○'}</span>
+                    One uppercase letter (A-Z)
+                  </div>
+                  <div className={`flex items-center text-xs ${
+                    passwordValidation.requirements.hasLowerCase ? 'text-green-600' : 'text-gray-400'
+                  }`}>
+                    <span className="mr-2">{passwordValidation.requirements.hasLowerCase ? '✓' : '○'}</span>
+                    One lowercase letter (a-z)
+                  </div>
+                  <div className={`flex items-center text-xs ${
+                    passwordValidation.requirements.hasNumbers ? 'text-green-600' : 'text-gray-400'
+                  }`}>
+                    <span className="mr-2">{passwordValidation.requirements.hasNumbers ? '✓' : '○'}</span>
+                    One number (0-9)
+                  </div>
+                  <div className={`flex items-center text-xs ${
+                    passwordValidation.requirements.hasSymbols ? 'text-green-600' : 'text-gray-400'
+                  }`}>
+                    <span className="mr-2">{passwordValidation.requirements.hasSymbols ? '✓' : '○'}</span>
+                    One symbol (!@#$%^&*)
                   </div>
                 </div>
               </div>
             )}
-            
-            {/* Submit Button */}
-            <Button
-              variant="primary"
-              type="submit"
-              className="auth-submit-btn"
-              disabled={loading || (!isLogin && formData.password !== formData.confirmPassword)}
-            >
-              {loading ? (
-                <div className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  {isLogin ? 'Signing you in...' : 'Creating your account...'}
-                </div>
-              ) : (
-                <div className="flex items-center justify-center">
-                  <span className="mr-2">{isLogin ? '🔐' : '🚀'}</span>
-                  {isLogin ? 'Sign In' : 'Create Account'}
-                </div>
-              )}
-            </Button>
-            
-            {/* Switch Mode Link */}
-            <div className="text-center pt-6 border-t border-warm-gray-100">
-              <span className="text-warm-gray-600">
-                {isLogin ? "Don't have an account? " : "Already have an account? "}
-              </span>
-              <button
-                type="button"
-                onClick={switchMode}
-                className="text-etsy-orange hover:text-etsy-orange-dark font-semibold transition-colors hover:underline"
-              >
-                {isLogin ? 'Sign Up' : 'Sign In'}
-              </button>
-            </div>
-          </form>
-        </Card>
+          </div>
 
-        {/* Info */}
+          {/* Confirm Password Field (Signup only) */}
+          {!isLogin && (
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-warm-gray-700 mb-2">
+                Confirm Password
+              </label>
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                required={!isLogin}
+                placeholder="Confirm your password"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-etsy-orange focus:border-etsy-orange transition-colors ${
+                  validationErrors.confirmPassword ? 'border-red-300' : 'border-gray-300'
+                }`}
+              />
+              {validationErrors.confirmPassword && (
+                <p className="mt-1 text-sm text-red-600">{validationErrors.confirmPassword}</p>
+              )}
+            </div>
+          )}
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={loading || (!isLogin && formData.password && !passwordValidation.isStrong)}
+            className={`w-full font-medium py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+              (!isLogin && formData.password && !passwordValidation.isStrong) 
+                ? 'bg-gray-300 text-gray-500' 
+                : 'bg-etsy-orange hover:bg-etsy-orange-dark text-white'
+            }`}
+          >
+            {loading ? (
+              <div className="flex items-center justify-center">
+                <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                {isLogin ? 'Signing in...' : 'Creating account...'}
+              </div>
+            ) : (
+              <>
+                {isLogin ? 'Sign in' : 'Create account'}
+                {!isLogin && formData.password && !passwordValidation.isStrong && (
+                  <span className="block text-xs mt-1 opacity-75">Complete all password requirements</span>
+                )}
+              </>
+            )}
+          </button>
+        </form>
+
+        {/* Switch Mode */}
         <div className="text-center">
-          <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 border border-gray-100">
-            <p className="text-sm text-gray-600 font-medium">
-              🛡️ Secure authentication • 🛍️ Shopping made easy
-            </p>
+          <p className="text-sm text-warm-gray-600">
+            {isLogin ? "Don't have an account?" : "Already have an account?"}
+            {' '}
+            <button
+              type="button"
+              onClick={switchMode}
+              className="font-medium text-etsy-orange hover:text-etsy-orange-dark transition-colors"
+            >
+              {isLogin ? 'Sign up' : 'Sign in'}
+            </button>
+          </p>
+        </div>
+
+        {/* Guest Mode Links */}
+        <div className="text-center pt-4 border-t border-warm-gray-200">
+          <p className="text-sm text-warm-gray-500 mb-3">Want to browse first?</p>
+          <div className="space-x-4">
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              className="text-sm text-warm-gray-600 hover:text-etsy-orange transition-colors"
+            >
+              Continue as Guest
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/products')}
+              className="text-sm text-warm-gray-600 hover:text-etsy-orange transition-colors"
+            >
+              Browse Products
+            </button>
           </div>
         </div>
       </div>

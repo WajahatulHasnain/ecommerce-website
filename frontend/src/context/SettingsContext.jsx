@@ -40,7 +40,7 @@ export const SettingsProvider = ({ children }) => {
 
   const fetchSettings = async () => {
     try {
-      const response = await api.get('/customer/settings');
+      const response = await api.get('/public/settings');
       if (response.data.success) {
         const data = response.data.data;
         setSettings(prev => ({
@@ -52,6 +52,7 @@ export const SettingsProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Failed to fetch settings:', error);
+      // Use default settings if fetch fails
     } finally {
       setLoading(false);
     }

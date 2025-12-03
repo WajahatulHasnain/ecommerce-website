@@ -176,9 +176,9 @@ function AppContent() {
         <Navigation />
         <main>
           <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Navigate to="/customer/products" replace />} />
-          <Route path="/products" element={<Navigate to="/customer/products" replace />} />
+          {/* Public Routes - Guest Mode */}
+          <Route path="/" element={<CustomerProducts />} />
+          <Route path="/products" element={<CustomerProducts />} />
           <Route path="/login" element={<AuthPage />} />
           <Route path="/signup" element={<AuthPage />} />
           <Route path="/auth" element={<AuthPage />} />
@@ -205,7 +205,7 @@ function AppContent() {
               <CustomerLayout />
             </CustomerRoute>
           }>
-            <Route index element={<CustomerDashboard />} />
+            <Route index element={<CustomerProducts />} />
             <Route path="dashboard" element={<CustomerDashboard />} />
             <Route path="products" element={<CustomerProducts />} />
             <Route path="cart" element={<CustomerCart />} />
