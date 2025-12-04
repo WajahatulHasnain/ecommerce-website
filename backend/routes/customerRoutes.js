@@ -164,7 +164,7 @@ router.post("/purchase", async (req, res) => {
   try {
     console.log('🛒 Purchase request received:', { userId: req.user._id, products: req.body.products?.length });
     
-    const { products, customerInfo, coupon, subtotal, discount, finalTotal } = req.body;
+    const { products, customerInfo, coupon, subtotal, discount, finalTotal, paymentMethod = 'cod' } = req.body;
     const userId = req.user._id;
     
     if (!products || products.length === 0) {
@@ -345,8 +345,8 @@ router.post("/purchase", async (req, res) => {
         }
       },
       status: 'pending',
-      paymentStatus: 'completed', // Assuming immediate payment for now
-      paymentMethod: 'credit_card'
+      paymentStatus: paymentMethod === 'cod' ? 'pending' : 'completed',
+      paymentMethod: paymentMethod || 'cod'
     });
     
     await order.save();

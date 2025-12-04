@@ -6,7 +6,8 @@ export default function ProductFilters({
   filters, 
   onFiltersChange, 
   onSearchChange,
-  searchTerm 
+  searchTerm,
+  isLoading = false
 }) {
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [priceRange, setPriceRange] = useState([0, 0]);
@@ -15,6 +16,11 @@ export default function ProductFilters({
 
   useEffect(() => {
     setTempFilters(filters);
+    // Sync price range with filters
+    setPriceRange([
+      parseFloat(filters.minPrice) || 0,
+      parseFloat(filters.maxPrice) || 0
+    ]);
   }, [filters]);
 
   useEffect(() => {
@@ -30,7 +36,8 @@ export default function ProductFilters({
     filters.category !== 'all',
     filters.discount !== 'all',
     filters.minPrice && filters.minPrice.trim(),
-    filters.maxPrice && filters.maxPrice.trim()
+    filters.maxPrice && filters.maxPrice.trim(),
+    filters.sort && filters.sort !== 'newest'
   ].filter(Boolean).length;
 
   const toggleFilterPanel = () => {
@@ -40,6 +47,27 @@ export default function ProductFilters({
   // Handle filter changes
   const onTempFilterChange = (key, value) => {
     setTempFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  // Apply filters function
+  const applyFilters = () => {
+    onFiltersChange(tempFilters);
+    setShowFilterPanel(false);
+  };
+
+  // Clear all filters
+  const clearAllFilters = () => {
+    const clearedFilters = {
+      category: 'all',
+      minPrice: '',
+      maxPrice: '',
+      discount: 'all',
+      sort: 'newest'
+    };
+    setTempFilters(clearedFilters);
+    setPriceRange([0, 0]);
+    onFiltersChange(clearedFilters);
+    onSearchChange('');
   };
 
   return (
@@ -59,13 +87,7 @@ export default function ProductFilters({
               placeholder="Search products..."
               value={searchTerm || ''}
               onChange={(e) => {
-                const newSearchTerm = e.target.value;
-                onSearchChange(newSearchTerm);
-                // Debounce the search to avoid too many API calls
-                clearTimeout(window.searchTimeout);
-                window.searchTimeout = setTimeout(() => {
-                  // The search will automatically trigger a new API call via useEffect
-                }, 300);
+                onSearchChange(e.target.value);
               }}
               className="w-full pl-10 pr-4 py-3 border border-warm-gray-300 rounded-xl focus:ring-2 focus:ring-etsy-orange focus:border-etsy-orange bg-white transition-all duration-200"
             />
@@ -161,15 +183,10 @@ export default function ProductFilters({
                     placeholder="0"
                     value={priceRange[0] || ''}
                     onChange={(e) => {
-                      const value = parseInt(e.target.value) || 0;
-                      setPriceRange([value, priceRange[1]]);
-                      const newFilters = { ...tempFilters, minPrice: value.toString() };
-                      setTempFilters(newFilters);
-                      // Debounce the filter application for price inputs
-                      clearTimeout(window.priceFilterTimeout);
-                      window.priceFilterTimeout = setTimeout(() => {
-                        onFiltersChange(newFilters);
-                      }, 500);
+                      const value = e.target.value;
+                      const numValue = value === '' ? 0 : parseInt(value) || 0;
+                      setPriceRange([numValue, priceRange[1]]);
+                      onTempFilterChange('minPrice', value === '' ? '' : numValue.toString());
                     }}
                     className="w-full px-3 py-2 border border-warm-gray-300 rounded-lg focus:ring-2 focus:ring-etsy-orange focus:border-etsy-orange bg-white text-sm"
                   />
@@ -185,15 +202,10 @@ export default function ProductFilters({
                     placeholder="Max price"
                     value={priceRange[1] === 0 ? '' : priceRange[1]}
                     onChange={(e) => {
-                      const value = parseInt(e.target.value) || 0;
-                      setPriceRange([priceRange[0], value]);
-                      const newFilters = { ...tempFilters, maxPrice: value ? value.toString() : '' };
-                      setTempFilters(newFilters);
-                      // Debounce the filter application for price inputs
-                      clearTimeout(window.priceFilterTimeout);
-                      window.priceFilterTimeout = setTimeout(() => {
-                        onFiltersChange(newFilters);
-                      }, 500);
+                      const value = e.target.value;
+                      const numValue = value === '' ? 0 : parseInt(value) || 0;
+                      setPriceRange([priceRange[0], numValue]);
+                      onTempFilterChange('maxPrice', value === '' ? '' : numValue.toString());
                     }}
                     className="w-full px-3 py-2 border border-warm-gray-300 rounded-lg focus:ring-2 focus:ring-etsy-orange focus:border-etsy-orange bg-white text-sm"
                   />
@@ -219,11 +231,7 @@ export default function ProductFilters({
                       name="discount"
                       value={deal}
                       checked={tempFilters.discount === deal}
-                      onChange={(e) => {
-                        const newFilters = { ...tempFilters, discount: e.target.value };
-                        setTempFilters(newFilters);
-                        onFiltersChange(newFilters);
-                      }}
+                      onChange={(e) => onTempFilterChange('discount', e.target.value)}
                       className="w-4 h-4 text-etsy-orange focus:ring-etsy-orange border-warm-gray-300"
                     />
                     <span className="text-warm-gray-700">
@@ -240,12 +248,11 @@ export default function ProductFilters({
               <select 
                 value={tempFilters.sort || 'newest'}
                 onChange={(e) => {
-                  const newFilters = { ...tempFilters, sort: e.target.value };
-                  setTempFilters(newFilters);
-                  onFiltersChange(newFilters);
+                  onTempFilterChange('sort', e.target.value);
                 }}
                 className="w-full px-4 py-3 border border-warm-gray-300 rounded-xl focus:ring-2 focus:ring-etsy-orange focus:border-etsy-orange bg-white"
               >
+                <option value="newest">Newest First</option>
                 <option value="price-low">Price: Low to High</option>
                 <option value="price-high">Price: High to Low</option>
               </select>
@@ -255,28 +262,27 @@ export default function ProductFilters({
           {/* Bottom Action Buttons */}
           <div className="sticky bottom-0 bg-white border-t border-warm-gray-200 px-6 py-4 space-y-3">
             <button
-              onClick={() => {
-                const resetFilters = {
-                  category: 'all',
-                  minPrice: '',
-                  maxPrice: '',
-                  discount: 'all'
-                };
-                setTempFilters(resetFilters);
-                setPriceRange([0, 0]);
-                onFiltersChange(resetFilters);
-                onSearchChange('');
-                setShowFilterPanel(false);
-              }}
-              className="w-full px-6 py-3 bg-warm-gray-200 text-warm-gray-700 rounded-xl hover:bg-warm-gray-300 transition-all duration-200 font-medium"
+              onClick={applyFilters}
+              disabled={isLoading}
+              className="w-full px-6 py-3 bg-etsy-orange text-white rounded-xl hover:bg-etsy-orange-dark transition-all duration-200 font-medium shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
-              Clear All Filters
+              {isLoading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Applying...
+                </>
+              ) : (
+                'Apply Filters'
+              )}
             </button>
             <button
-              onClick={() => setShowFilterPanel(false)}
-              className="w-full px-6 py-3 bg-etsy-orange text-white rounded-xl hover:bg-etsy-orange-dark transition-all duration-200 font-medium shadow-md hover:shadow-lg"
+              onClick={clearAllFilters}
+              className="w-full px-6 py-3 bg-warm-gray-200 text-warm-gray-700 rounded-xl hover:bg-warm-gray-300 transition-all duration-200 font-medium"
             >
-              Close
+              Clear All
             </button>
           </div>
         </div>

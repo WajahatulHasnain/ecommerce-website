@@ -240,19 +240,77 @@ router.get("/orders", async (req, res) => {
 router.put("/orders/:id/status", async (req, res) => {
   try {
     const { status } = req.body;
-    const order = await Order.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true }
-    ).populate('userId', 'name email');
+    const orderId = req.params.id;
     
+    // Validate status
+    const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ success: false, msg: 'Invalid status' });
+    }
+    
+    // Get the order first to check current state
+    const order = await Order.findById(orderId);
     if (!order) {
       return res.status(404).json({ success: false, msg: "Order not found" });
     }
     
-    res.json({ success: true, data: order });
+    const updateData = { status };
+    
+    // Payment status logic for COD orders:
+    // - Keep "pending" until order is "delivered"
+    // - Only mark as "completed" when delivered
+    if (order.paymentMethod === 'cod' || !order.paymentMethod || order.paymentMethod === 'cash_on_delivery') {
+      if (status === 'delivered') {
+        updateData.paymentStatus = 'completed'; // Mark as paid when delivered
+      } else if (['pending', 'processing', 'shipped'].includes(status)) {
+        updateData.paymentStatus = 'pending'; // Keep as pending for these statuses
+      }
+    }
+    
+    const updatedOrder = await Order.findByIdAndUpdate(
+      orderId,
+      updateData,
+      { new: true }
+    ).populate('userId', 'name email');
+    
+    console.log(`✅ Order ${orderId} status updated to: ${status}${updateData.paymentStatus ? ', payment: ' + updateData.paymentStatus : ''}`);
+    
+    res.json({ success: true, data: updatedOrder });
   } catch (error) {
+    console.error('Update order status error:', error);
     res.status(400).json({ success: false, msg: error.message });
+  }
+});
+
+// Migrate all orders to COD payment method
+router.post("/orders/migrate-to-cod", async (req, res) => {
+  try {
+    const result = await Order.updateMany(
+      {}, // Update all orders
+      { 
+        paymentMethod: 'cod',
+        paymentStatus: 'pending' // Set all to pending initially
+      }
+    );
+    
+    // Then update delivered orders to have completed payment status
+    const deliveredResult = await Order.updateMany(
+      { status: 'delivered', paymentMethod: 'cod' },
+      { paymentStatus: 'completed' }
+    );
+
+    console.log(`🔄 Updated ${result.modifiedCount} orders to COD payment method`);
+    console.log(`✅ Updated ${deliveredResult.modifiedCount} delivered orders to completed payment`);
+
+    res.json({ 
+      success: true, 
+      msg: `Updated ${result.modifiedCount} orders to COD. ${deliveredResult.modifiedCount} delivered orders marked as paid.`,
+      modifiedCount: result.modifiedCount,
+      deliveredUpdated: deliveredResult.modifiedCount
+    });
+  } catch (error) {
+    console.error('Migration error:', error);
+    res.status(500).json({ success: false, msg: 'Failed to migrate orders to COD' });
   }
 });
 

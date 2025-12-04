@@ -23,7 +23,8 @@ export default function CustomerCart() {
       state: '',
       zipCode: '',
       country: ''
-    }
+    },
+    paymentMethod: 'cod' // Default to Cash on Delivery
   });
   const [processing, setProcessing] = useState(false);
   const navigate = useNavigate();
@@ -180,7 +181,8 @@ export default function CustomerCart() {
       } : null,
       subtotal,
       discount: couponDiscount,
-      totalPrice: finalTotal
+      totalPrice: finalTotal,
+      paymentMethod: customerInfo.paymentMethod || 'cod'
     };
 
     setProcessing(true);
@@ -606,6 +608,30 @@ export default function CustomerCart() {
                       placeholder="Country"
                     />
                   </div>
+                </div>
+              </div>
+
+              {/* Payment Method Selection */}
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-gray-700 mb-3">Payment Method</label>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="cod"
+                      checked={customerInfo.paymentMethod === 'cod'}
+                      onChange={(e) => setCustomerInfo(prev => ({ ...prev, paymentMethod: e.target.value }))}
+                      className="w-4 h-4 text-green-600 focus:ring-green-500 border-gray-300"
+                    />
+                    <div className="flex items-center space-x-2">
+                      <span className="text-2xl">💵</span>
+                      <div>
+                        <span className="font-medium text-gray-900">Cash on Delivery (COD)</span>
+                        <p className="text-sm text-gray-600">Pay when your order is delivered to your doorstep</p>
+                      </div>
+                    </div>
+                  </label>
                 </div>
               </div>
 

@@ -8,13 +8,24 @@ import { useSettings } from '../../context/SettingsContext';
 export default function CustomerOrders() {
   const { formatPrice } = useSettings();
   const [orders, setOrders] = useState([]);
+  const [filteredOrders, setFilteredOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('all');
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchOrders();
   }, []);
+
+  // Filter orders when status filter or orders change
+  useEffect(() => {
+    if (statusFilter === 'all') {
+      setFilteredOrders(orders);
+    } else {
+      setFilteredOrders(orders.filter(order => order.status === statusFilter));
+    }
+  }, [orders, statusFilter]);
 
   const fetchOrders = async () => {
     try {
@@ -34,12 +45,23 @@ export default function CustomerOrders() {
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'processing': return 'bg-blue-100 text-blue-800';
-      case 'shipped': return 'bg-blue-100 text-blue-800';
-      case 'delivered': return 'bg-green-100 text-green-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'processing': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'shipped': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'delivered': return 'bg-green-100 text-green-800 border-green-200';
+      case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'pending': return '⏳';
+      case 'processing': return '🔄';
+      case 'shipped': return '🚚';
+      case 'delivered': return '✅';
+      case 'cancelled': return '❌';
+      default: return '📦';
     }
   };
 
@@ -54,12 +76,58 @@ export default function CustomerOrders() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">My Orders</h1>
-        <p className="text-gray-600">
-          {orders.length > 0 ? `You have ${orders.length} order${orders.length !== 1 ? 's' : ''}` : 'Track your order history and status'}
-        </p>
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">My Orders</h1>
+          <p className="text-gray-600">
+            {orders.length > 0 ? `You have ${orders.length} order${orders.length !== 1 ? 's' : ''}` : 'Track your order history and status'}
+          </p>
+        </div>
+        <div className="text-sm text-gray-500">
+          Total Orders: <span className="font-semibold text-gray-900">{orders.length}</span>
+        </div>
       </div>
+
+      {/* Filter Bar */}
+      {orders.length > 0 && (
+        <div className="bg-white border rounded-lg p-4 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">Filter by Status</h3>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { status: 'all', label: 'All Orders', icon: '📦' },
+              { status: 'pending', label: 'Pending', icon: '⏳' },
+              { status: 'processing', label: 'Processing', icon: '🔄' },
+              { status: 'shipped', label: 'Shipped', icon: '🚚' },
+              { status: 'delivered', label: 'Delivered', icon: '✅' },
+              { status: 'cancelled', label: 'Cancelled', icon: '❌' }
+            ].map(({ status, label, icon }) => {
+              const count = status === 'all' ? orders.length : orders.filter(order => order.status === status).length;
+              return (
+                <button
+                  key={status}
+                  onClick={() => setStatusFilter(status)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors flex items-center gap-2 ${
+                    statusFilter === status
+                      ? 'bg-orange-600 text-white border-orange-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <span>{icon}</span>
+                  {label}
+                  <span className={`ml-1 px-2 py-0.5 rounded-full text-xs ${
+                    statusFilter === status
+                      ? 'bg-orange-500 text-white'
+                      : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {orders.length === 0 ? (
         <Card className="p-12 text-center">
@@ -79,40 +147,88 @@ export default function CustomerOrders() {
             </Button>
           </div>
         </Card>
+      ) : filteredOrders.length === 0 ? (
+        <Card className="p-12 text-center">
+          <div className="text-6xl mb-4">📦</div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            No {statusFilter} orders
+          </h3>
+          <p className="text-gray-600">
+            No orders with {statusFilter} status found
+          </p>
+        </Card>
       ) : (
-        <div className="space-y-4">
-          {orders.map((order) => (
-            <Card key={order._id} className="p-6 hover:shadow-lg transition-shadow">
-              {/* Simplified Preview: Only Product Title + Total */}
-              <div className="flex justify-between items-center">
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold mb-2">Order #{order.displayOrderId || order._id.slice(-8).toUpperCase()}</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredOrders.map((order) => (
+            <Card key={order._id} className="p-4 hover:shadow-lg transition-shadow border-l-4 border-orange-500 h-full">
+              {/* Order Header */}
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-gray-900 truncate">
+                  #{order.displayOrderId || order._id.slice(-8).toUpperCase()}
+                </h3>
+                <div className={`px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 border ${getStatusColor(order.status)}`}>
+                  <span>{getStatusIcon(order.status)}</span>
+                  {order.status?.charAt(0).toUpperCase() + order.status?.slice(1)}
+                </div>
+              </div>
+              
+              {/* Order Summary */}
+              <div className="space-y-2 mb-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-500">Total:</span>
+                  <span className="text-sm font-bold text-green-600">{formatPrice(order.totalPrice)}</span>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-500">Items:</span>
+                  <span className="text-xs text-gray-700">{order.products?.length || 0} product(s)</span>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-500">Payment:</span>
+                  <span className="text-xs text-orange-600">
+                    {order.paymentMethod === 'cod' ? '💵 COD' : 
+                     order.paymentMethod === 'credit_card' ? '💳 Card' : '💵 COD'}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-500">Date:</span>
+                  <span className="text-xs text-gray-700">
+                    {new Date(order.createdAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric'
+                    })}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Product Preview */}
+              {order.products && order.products.length > 0 && (
+                <div className="mb-3">
+                  <div className="text-xs text-gray-500 mb-1">Products:</div>
                   <div className="space-y-1">
-                    {order.products?.slice(0, 2).map((item, i) => (
-                      <p key={i} className="text-gray-600 text-sm">
+                    {order.products.slice(0, 2).map((item, index) => (
+                      <div key={index} className="text-xs text-gray-700 truncate">
                         {item.title} {item.quantity > 1 && `(x${item.quantity})`}
-                      </p>
+                      </div>
                     ))}
-                    {order.products?.length > 2 && (
-                      <p className="text-gray-500 text-sm">
-                        +{order.products.length - 2} more item{order.products.length - 2 > 1 ? 's' : ''}
-                      </p>
+                    {order.products.length > 2 && (
+                      <div className="text-xs text-gray-500">
+                        +{order.products.length - 2} more
+                      </div>
                     )}
                   </div>
                 </div>
-                
-                <div className="text-right ml-4">
-                  <div className="text-xl font-bold text-gray-900 mb-2">
-                    {formatPrice(order.totalPrice)}
-                  </div>
-                  <Button 
-                    onClick={() => setSelectedOrder(order)}
-                    className="bg-orange-600 text-white hover:bg-orange-700"
-                  >
-                    View Details
-                  </Button>
-                </div>
-              </div>
+              )}
+              
+              {/* Action Button */}
+              <Button 
+                onClick={() => setSelectedOrder(order)}
+                className="w-full bg-orange-600 text-white text-xs py-2 hover:bg-orange-700"
+              >
+                📋 View Details
+              </Button>
             </Card>
           ))}
         </div>
@@ -150,7 +266,28 @@ export default function CustomerOrders() {
                         {selectedOrder.status}
                       </span>
                     </p>
-                    <p><span className="font-medium">Payment Method:</span> {selectedOrder.paymentMethod || 'Card'}</p>
+                    <p><span className="font-medium">Payment Method:</span> 
+                      <span className={`ml-2 px-3 py-1 rounded-full text-sm ${
+                        selectedOrder.paymentMethod === 'cod' ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {selectedOrder.paymentMethod === 'cod' ? '💵 Cash on Delivery' : 
+                         selectedOrder.paymentMethod === 'credit_card' ? '💳 Credit Card' : 
+                         selectedOrder.paymentMethod?.replace('_', ' ').toUpperCase() || '💵 Cash on Delivery'
+                        }
+                      </span>
+                    </p>
+                    <p><span className="font-medium">Payment Status:</span> 
+                      <span className={`ml-2 px-3 py-1 rounded-full text-sm ${
+                        selectedOrder.paymentStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                        selectedOrder.paymentStatus === 'completed' ? 'bg-green-100 text-green-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {selectedOrder.paymentStatus === 'pending' ? '⏳ Payment Pending' : 
+                         selectedOrder.paymentStatus === 'completed' ? '✅ Paid' : 
+                         selectedOrder.paymentStatus?.charAt(0).toUpperCase() + selectedOrder.paymentStatus?.slice(1)
+                        }
+                      </span>
+                    </p>
                   </div>
                 </div>
 

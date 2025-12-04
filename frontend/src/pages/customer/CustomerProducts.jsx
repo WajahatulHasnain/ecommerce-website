@@ -24,7 +24,8 @@ export default function CustomerProducts() {
     category: 'all',
     minPrice: '',
     maxPrice: '',
-    discount: 'all'
+    discount: 'all',
+    sort: 'newest'
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [cart, setCart] = useState([]);
@@ -40,7 +41,8 @@ export default function CustomerProducts() {
       state: '',
       zipCode: '',
       country: ''
-    }
+    },
+    paymentMethod: 'cod' // Default to Cash on Delivery
   });
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null);
@@ -56,16 +58,26 @@ export default function CustomerProducts() {
         category: 'all',
         minPrice: '',
         maxPrice: '',
-        discount: 'all'
+        discount: 'all',
+        sort: 'newest'
       });
     }
   }, [location.search]);
 
-  // Fetch data when filters or search changes
+  // Fetch data when filters change (but debounce search)
   useEffect(() => {
     fetchProducts();
     fetchWishlist();
-  }, [filters, searchTerm]);
+  }, [filters]);
+
+  // Separate effect for search with debouncing
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchProducts();
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
 
   const fetchProducts = async () => {
     try {
@@ -99,6 +111,25 @@ export default function CustomerProducts() {
           filteredProducts = filteredProducts.filter(product => 
             product.discount?.type && product.discount?.value > 0
           );
+        }
+        
+        // Apply sorting
+        if (filters.sort) {
+          filteredProducts.sort((a, b) => {
+            switch (filters.sort) {
+              case 'price-low':
+                const priceA = a.finalPrice || a.price;
+                const priceB = b.finalPrice || b.price;
+                return priceA - priceB;
+              case 'price-high':
+                const priceA2 = a.finalPrice || a.price;
+                const priceB2 = b.finalPrice || b.price;
+                return priceB2 - priceA2;
+              case 'newest':
+              default:
+                return new Date(b.createdAt) - new Date(a.createdAt);
+            }
+          });
         }
         
         setProducts(filteredProducts);
@@ -324,7 +355,8 @@ export default function CustomerProducts() {
         } : null,
         subtotal,
         discount,
-        finalTotal
+        finalTotal,
+        paymentMethod: customerInfo.paymentMethod || 'cod'
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -338,7 +370,8 @@ export default function CustomerProducts() {
           name: '',
           email: '',
           phone: '',
-          address: { street: '', city: '', state: '', zipCode: '', country: '' }
+          address: { street: '', city: '', state: '', zipCode: '', country: '' },
+          paymentMethod: 'cod'
         });
         setShowPurchaseModal(false);
         fetchProducts();
@@ -458,6 +491,7 @@ export default function CustomerProducts() {
           onFiltersChange={handleFiltersChange}
           searchTerm={searchTerm}
           onSearchChange={handleSearchChange}
+          isLoading={loading}
         />
 
         {/* Mini Cart Summary - Only for authenticated users */}
@@ -680,7 +714,7 @@ export default function CustomerProducts() {
                   <p className="text-sm sm:text-base text-warm-gray-500 mb-4 sm:mb-6">Try adjusting your search or filter criteria</p>
                   <Button 
                     onClick={() => {
-                      setFilters({ category: 'all', minPrice: '', maxPrice: '', discount: 'all' });
+                      setFilters({ category: 'all', minPrice: '', maxPrice: '', discount: 'all', sort: 'newest' });
                       setSearchTerm('');
                     }}
                     className="bg-etsy-orange hover:bg-etsy-orange-dark text-white text-sm sm:text-base"
@@ -917,6 +951,47 @@ export default function CustomerProducts() {
                         address: { ...prev.address, state: e.target.value }
                       }))}
                     />
+                  </div>
+                  
+                  {/* Payment Method Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                    <div className="space-y-2">
+                      <label className="flex items-center space-x-3 cursor-pointer p-3 border rounded-lg bg-green-50 border-green-200">
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value="cod"
+                          checked={customerInfo.paymentMethod === 'cod'}
+                          onChange={(e) => setCustomerInfo(prev => ({ ...prev, paymentMethod: e.target.value }))}
+                          className="w-4 h-4 text-green-600 focus:ring-green-500 border-gray-300"
+                        />
+                        <div className="flex items-center space-x-2">
+                          <span className="text-2xl">💵</span>
+                          <div>
+                            <span className="font-medium text-gray-900">Cash on Delivery (COD)</span>
+                            <p className="text-sm text-gray-600">Pay when your order is delivered</p>
+                          </div>
+                        </div>
+                      </label>
+                      
+                      <label className="flex items-center space-x-3 cursor-pointer p-3 border rounded-lg opacity-50">
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value="card"
+                          disabled
+                          className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                        />
+                        <div className="flex items-center space-x-2">
+                          <span className="text-2xl">💳</span>
+                          <div>
+                            <span className="font-medium text-gray-500">Credit/Debit Card</span>
+                            <p className="text-sm text-gray-500">Coming soon</p>
+                          </div>
+                        </div>
+                      </label>
+                    </div>
                   </div>
                 </div>
 
