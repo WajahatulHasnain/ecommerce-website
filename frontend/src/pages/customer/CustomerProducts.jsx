@@ -21,20 +21,12 @@ export default function CustomerProducts() {
   const [purchasing, setPurchasing] = useState(false);
   const [wishlist, setWishlist] = useState([]);
   const [filters, setFilters] = useState({
-    search: '',
     category: 'all',
     minPrice: '',
     maxPrice: '',
     discount: 'all'
   });
-  // Temporary filters that user can edit without triggering API calls
-  const [tempFilters, setTempFilters] = useState({
-    search: '',
-    category: 'all',
-    minPrice: '',
-    maxPrice: '',
-    discount: 'all'
-  });
+  const [searchTerm, setSearchTerm] = useState('');
   const [cart, setCart] = useState([]);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -59,29 +51,32 @@ export default function CustomerProducts() {
     const urlParams = new URLSearchParams(location.search);
     const searchQuery = urlParams.get('search');
     if (searchQuery) {
-      const newFilters = {
-        search: searchQuery,
+      setSearchTerm(searchQuery);
+      setFilters({
         category: 'all',
         minPrice: '',
         maxPrice: '',
         discount: 'all'
-      };
-      setFilters(newFilters);
-      setTempFilters(newFilters);
+      });
     }
   }, [location.search]);
 
-  // Fetch data only when actual filters change (not tempFilters)
+  // Fetch data when filters or search changes
   useEffect(() => {
     fetchProducts();
     fetchWishlist();
-  }, [filters]);
+  }, [filters, searchTerm]);
 
   const fetchProducts = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
       const params = new URLSearchParams();
+      
+      // Add search term
+      if (searchTerm) {
+        params.append('search', searchTerm);
+      }
       
       // Add filters except discount (handle locally)
       Object.keys(filters).forEach(key => {
@@ -148,16 +143,9 @@ export default function CustomerProducts() {
     }
   };
 
-  const handleTempFilterChange = (name, value) => {
-    setTempFilters(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleApplyFilters = () => {
+  const handleFiltersChange = (newFilters) => {
     // Validate price inputs
-    let validatedFilters = { ...tempFilters };
+    let validatedFilters = { ...newFilters };
     
     // Clean up price values - remove any non-numeric characters except decimal point
     if (validatedFilters.minPrice) {
@@ -170,21 +158,12 @@ export default function CustomerProducts() {
       validatedFilters.maxPrice = cleanMax && !isNaN(parseFloat(cleanMax)) ? cleanMax : '';
     }
     
-    // Update actual filters (this will trigger the useEffect to fetch products)
+    // Update filters (this will trigger the useEffect to fetch products)
     setFilters(validatedFilters);
-    setTempFilters(validatedFilters);
   };
 
-  const handleClearAll = () => {
-    const clearedFilters = {
-      search: '',
-      category: 'all',
-      minPrice: '',
-      maxPrice: '',
-      discount: 'all'
-    };
-    setFilters(clearedFilters);
-    setTempFilters(clearedFilters);
+  const handleSearchChange = (newSearchTerm) => {
+    setSearchTerm(newSearchTerm);
   };
 
   const addToCart = async (product) => {
@@ -476,10 +455,9 @@ export default function CustomerProducts() {
         {/* Mobile-Friendly Search & Filters */}
         <ProductFilters 
           filters={filters}
-          tempFilters={tempFilters}
-          onTempFilterChange={handleTempFilterChange}
-          onApplyFilters={handleApplyFilters}
-          onClearAll={handleClearAll}
+          onFiltersChange={handleFiltersChange}
+          searchTerm={searchTerm}
+          onSearchChange={handleSearchChange}
         />
 
         {/* Mini Cart Summary - Only for authenticated users */}
@@ -701,7 +679,10 @@ export default function CustomerProducts() {
                   <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-warm-gray-900 mb-2 sm:mb-3">No products found</h3>
                   <p className="text-sm sm:text-base text-warm-gray-500 mb-4 sm:mb-6">Try adjusting your search or filter criteria</p>
                   <Button 
-                    onClick={() => setFilters({ search: '', category: 'all', minPrice: '', maxPrice: '', discount: 'all' })}
+                    onClick={() => {
+                      setFilters({ category: 'all', minPrice: '', maxPrice: '', discount: 'all' });
+                      setSearchTerm('');
+                    }}
                     className="bg-etsy-orange hover:bg-etsy-orange-dark text-white text-sm sm:text-base"
                     size="sm"
                   >

@@ -14,8 +14,7 @@ export default function CustomerLayout() {
     { name: 'Products', href: '/customer/products', icon: '🛍️' },
     { name: 'Cart', href: '/customer/cart', icon: '🛒' },
     { name: 'Orders', href: '/customer/orders', icon: '📋' },
-    { name: 'Wishlist', href: '/customer/wishlist', icon: '❤️' },
-    { name: 'Profile', href: '/customer/profile', icon: '👤' }
+    { name: 'Wishlist', href: '/customer/wishlist', icon: '❤️' }
   ];
 
   const handleLogout = () => {

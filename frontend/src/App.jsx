@@ -26,7 +26,6 @@ import CustomerProducts from "./pages/customer/CustomerProducts";
 import CustomerCart from "./pages/customer/CustomerCart";
 import CustomerOrders from "./pages/customer/CustomerOrders";
 import CustomerWishlist from "./pages/customer/CustomerWishlist";
-import CustomerProfile from "./pages/customer/CustomerProfile";
 
 function Navigation() {
   const { user, logout } = useAuth();
@@ -147,12 +146,14 @@ function Navigation() {
                       <span className="text-xs text-warm-gray-400 ml-1">({user.role})</span>
                     </span>
                   </div>
-                  <Link 
-                    to={user.role === 'customer' ? '/customer/profile' : '/admin/settings'}
-                    className="nav-link text-xs sm:text-sm hidden sm:block"
-                  >
-                    <span className="hidden md:inline">👤 </span>Profile
-                  </Link>
+                  {user.role === 'admin' && (
+                    <Link 
+                      to="/admin/settings"
+                      className="nav-link text-xs sm:text-sm hidden sm:block"
+                    >
+                      <span className="hidden md:inline">⚙️ </span>Settings
+                    </Link>
+                  )}
                   <button
                     onClick={logout}
                     className="text-etsy-orange-dark hover:text-etsy-orange transition-colors font-medium text-xs sm:text-sm"
@@ -211,7 +212,6 @@ function AppContent() {
             <Route path="cart" element={<CustomerCart />} />
             <Route path="orders" element={<CustomerOrders />} />
             <Route path="wishlist" element={<CustomerWishlist />} />
-            <Route path="profile" element={<CustomerProfile />} />
           </Route>
         </Routes>
       </main>

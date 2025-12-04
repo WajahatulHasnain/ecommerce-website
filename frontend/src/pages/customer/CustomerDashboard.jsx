@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Card from '../../components/ui/Card';
+import api from '../../utils/api';
 
 const CustomerDashboard = () => {
   const [dashboardData, setDashboardData] = useState({
@@ -18,36 +19,44 @@ const CustomerDashboard = () => {
     const fetchDashboardData = async () => {
       try {
         const token = localStorage.getItem('token');
-        const responses = await Promise.all([
-          fetch('/api/customer/orders', {
-            headers: { 'Authorization': `Bearer ${token}` }
-          }),
-          fetch('/api/customer/cart', {
-            headers: { 'Authorization': `Bearer ${token}` }
-          }),
-          fetch('/api/customer/wishlist', {
-            headers: { 'Authorization': `Bearer ${token}` }
-          })
+        if (!token) {
+          setLoading(false);
+          return;
+        }
+
+        // Fetch data using the API utility with proper headers
+        const [ordersRes, cartRes, wishlistRes] = await Promise.all([
+          api.get('/customer/orders'),
+          api.get('/customer/cart'),
+          api.get('/customer/wishlist')
         ]);
 
-        const [ordersRes, cartRes, wishlistRes] = responses;
-        const [orders, cart, wishlist] = await Promise.all([
-          ordersRes.json(),
-          cartRes.json(),
-          wishlistRes.json()
-        ]);
+        // Extract data from API responses
+        const orders = ordersRes.data?.data || ordersRes.data || [];
+        const cart = cartRes.data?.data || cartRes.data || {};
+        const wishlist = wishlistRes.data?.data || wishlistRes.data || {};
 
         setDashboardData({
           stats: {
-            totalOrders: orders?.length || 0,
-            pendingOrders: orders?.filter(order => order.status === 'pending')?.length || 0,
-            cartItems: cart?.items?.length || 0,
-            wishlistItems: wishlist?.items?.length || 0
+            totalOrders: Array.isArray(orders) ? orders.length : 0,
+            pendingOrders: Array.isArray(orders) ? orders.filter(order => order.status === 'pending' || order.status === 'processing').length : 0,
+            cartItems: cart?.items?.length || cart?.length || 0,
+            wishlistItems: wishlist?.items?.length || wishlist?.length || 0
           },
-          recentOrders: orders?.slice(0, 5) || []
+          recentOrders: Array.isArray(orders) ? orders.slice(0, 5) : []
         });
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
+        // Set default empty data on error
+        setDashboardData({
+          stats: {
+            totalOrders: 0,
+            pendingOrders: 0,
+            cartItems: 0,
+            wishlistItems: 0
+          },
+          recentOrders: []
+        });
       } finally {
         setLoading(false);
       }
@@ -69,12 +78,14 @@ const CustomerDashboard = () => {
   return (
     <div className="min-h-screen bg-warm-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Welcome Section */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-warm-gray-900 mb-2">
-            Welcome back, {user.name || 'Customer'}! 👋
-          </h1>
-          <p className="text-warm-gray-600">Here's what's happening with your account</p>
+        {/* Welcome Section with Admin-style Background */}
+        <div className="page-header mb-8">
+          <div className="bg-gradient-to-r from-etsy-orange to-etsy-orange-dark text-white rounded-2xl p-6 shadow-large">
+            <h1 className="text-3xl font-bold text-white mb-2">
+              Welcome back, {user.name || 'Customer'}! 👋
+            </h1>
+            <p className="text-white text-lg opacity-90">Here's what's happening with your account</p>
+          </div>
         </div>
 
         {/* Statistics Cards */}

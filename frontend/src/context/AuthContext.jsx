@@ -27,13 +27,15 @@ export const AuthProvider = ({ children }) => {
   // ✅ Enhanced: Fetch complete user profile
   const fetchUserProfile = useCallback(async (token) => {
     try {
-      const endpoint = user?.role === 'customer' ? '/customer/profile' : '/admin/profile';
-      const response = await api.get(endpoint, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if (response.data.success) {
-        setUser(prev => ({ ...prev, ...response.data.data }));
+      // Only fetch admin profile, customers don't need profile fetching
+      if (user?.role === 'admin') {
+        const response = await api.get('/admin/profile', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.data.success) {
+          setUser(prev => ({ ...prev, ...response.data.data }));
+        }
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
