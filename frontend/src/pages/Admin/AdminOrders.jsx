@@ -191,26 +191,26 @@ export default function AdminOrders() {
         {filteredOrders.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredOrders.map((order) => (
-              <Card key={order._id} className="p-4 hover:shadow-lg transition-shadow border-l-4 border-blue-500 h-full">
+              <Card key={order._id} className="p-4 hover:shadow-lg transition-shadow border-l-4 border-blue-500 flex flex-col">
                 {/* Order Header */}
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-bold text-gray-900 truncate">
+                  <h3 className="text-sm font-bold text-gray-900 truncate flex-1 mr-2">
                     #{order.orderId || `Order${order.orderNumber}` || order._id.slice(-4)}
                   </h3>
-                  <div className={`px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 ${getStatusColor(order.status)}`}>
+                  <div className={`px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 whitespace-nowrap ${getStatusColor(order.status)}`}>
                     <span>{getStatusIcon(order.status)}</span>
                     {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                   </div>
                 </div>
                 
                 {/* Customer Info */}
-                <div className="mb-3">
+                <div className="mb-3 min-h-[2.5rem]">
                   <p className="text-sm font-medium text-gray-900 truncate">{order.customerInfo?.name || 'N/A'}</p>
                   <p className="text-xs text-gray-500 truncate">{order.customerInfo?.email || ''}</p>
                 </div>
                 
                 {/* Order Summary */}
-                <div className="space-y-2 mb-3">
+                <div className="space-y-2 mb-3 flex-1">
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-gray-500">Total:</span>
                     <span className="text-sm font-bold text-green-600">${order.totalPrice?.toFixed(2) || '0.00'}</span>
@@ -223,7 +223,7 @@ export default function AdminOrders() {
                   
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-gray-500">Payment:</span>
-                    <span className="text-xs text-orange-600">
+                    <span className="text-xs text-orange-600 whitespace-nowrap">
                       {order.paymentMethod === 'cod' ? '💵 COD' : 
                        order.paymentMethod === 'credit_card' ? '💳 Card' : '💵 COD'}
                     </span>
@@ -231,7 +231,7 @@ export default function AdminOrders() {
                   
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-gray-500">Date:</span>
-                    <span className="text-xs text-gray-700">
+                    <span className="text-xs text-gray-700 whitespace-nowrap">
                       {new Date(order.createdAt).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric'
@@ -241,7 +241,7 @@ export default function AdminOrders() {
                 </div>
                 
                 {/* Action Buttons */}
-                <div className="space-y-2">
+                <div className="space-y-2 mt-auto">
                   {order.status === 'pending' && (
                     <Button
                       onClick={() => updateOrderStatus(order._id, 'processing')}

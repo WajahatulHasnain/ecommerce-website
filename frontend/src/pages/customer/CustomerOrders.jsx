@@ -160,13 +160,13 @@ export default function CustomerOrders() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredOrders.map((order) => (
-            <Card key={order._id} className="p-4 hover:shadow-lg transition-shadow border-l-4 border-orange-500 h-full">
+            <Card key={order._id} className="p-4 hover:shadow-lg transition-shadow border-l-4 border-orange-500 flex flex-col">
               {/* Order Header */}
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-gray-900 truncate">
+                <h3 className="text-sm font-bold text-gray-900 truncate flex-1 mr-2">
                   #{order.displayOrderId || order._id.slice(-8).toUpperCase()}
                 </h3>
-                <div className={`px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 border ${getStatusColor(order.status)}`}>
+                <div className={`px-2 py-1 rounded text-xs font-semibold flex items-center gap-1 border whitespace-nowrap ${getStatusColor(order.status)}`}>
                   <span>{getStatusIcon(order.status)}</span>
                   {order.status?.charAt(0).toUpperCase() + order.status?.slice(1)}
                 </div>
@@ -186,7 +186,7 @@ export default function CustomerOrders() {
                 
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-gray-500">Payment:</span>
-                  <span className="text-xs text-orange-600">
+                  <span className="text-xs text-orange-600 whitespace-nowrap">
                     {order.paymentMethod === 'cod' ? '💵 COD' : 
                      order.paymentMethod === 'credit_card' ? '💳 Card' : '💵 COD'}
                   </span>
@@ -194,7 +194,7 @@ export default function CustomerOrders() {
                 
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-gray-500">Date:</span>
-                  <span className="text-xs text-gray-700">
+                  <span className="text-xs text-gray-700 whitespace-nowrap">
                     {new Date(order.createdAt).toLocaleDateString('en-US', {
                       month: 'short',
                       day: 'numeric'
@@ -204,28 +204,30 @@ export default function CustomerOrders() {
               </div>
               
               {/* Product Preview */}
-              {order.products && order.products.length > 0 && (
-                <div className="mb-3">
-                  <div className="text-xs text-gray-500 mb-1">Products:</div>
-                  <div className="space-y-1">
-                    {order.products.slice(0, 2).map((item, index) => (
-                      <div key={index} className="text-xs text-gray-700 truncate">
-                        {item.title} {item.quantity > 1 && `(x${item.quantity})`}
-                      </div>
-                    ))}
-                    {order.products.length > 2 && (
-                      <div className="text-xs text-gray-500">
-                        +{order.products.length - 2} more
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+              <div className="mb-3 flex-1 min-h-[3.5rem]">
+                {order.products && order.products.length > 0 && (
+                  <>
+                    <div className="text-xs text-gray-500 mb-1">Products:</div>
+                    <div className="space-y-1">
+                      {order.products.slice(0, 2).map((item, index) => (
+                        <div key={index} className="text-xs text-gray-700 truncate">
+                          {item.title} {item.quantity > 1 && `(x${item.quantity})`}
+                        </div>
+                      ))}
+                      {order.products.length > 2 && (
+                        <div className="text-xs text-gray-500">
+                          +{order.products.length - 2} more
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
               
               {/* Action Button */}
               <Button 
                 onClick={() => setSelectedOrder(order)}
-                className="w-full bg-orange-600 text-white text-xs py-2 hover:bg-orange-700"
+                className="w-full bg-orange-600 text-white text-xs py-2 hover:bg-orange-700 mt-auto"
               >
                 📋 View Details
               </Button>

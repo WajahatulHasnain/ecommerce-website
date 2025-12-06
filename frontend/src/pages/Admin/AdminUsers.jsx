@@ -186,68 +186,86 @@ export default function AdminUsers() {
       </div>
 
       {/* Users List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {filteredUsers.length > 0 ? (
           filteredUsers.map((user) => (
-            <Card key={user._id} className="p-6 hover:shadow-lg transition-shadow border-l-4 border-l-blue-500">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900">{user.name}</h3>
-                  <p className="text-gray-600 text-sm">{user.email}</p>
-                  {/* ✅ Enhanced: Show last update time */}
-                  <p className="text-xs text-gray-400 mt-1">
-                    Updated: {new Date(user.updatedAt).toLocaleString()}
-                  </p>
-                  {/* ✅ Enhanced: Show password change indicator */}
-                  {user.lastPasswordChange && (
-                    <p className="text-xs text-orange-500 mt-1">
-                      🔑 Password changed: {new Date(user.lastPasswordChange).toLocaleString()}
-                    </p>
-                  )}
+            <Card key={user._id} className="p-4 hover:shadow-lg transition-shadow border-l-4 border-l-blue-500 flex flex-col">
+              {/* User Header */}
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1 min-w-0 mr-2">
+                  <h3 className="text-sm font-bold text-gray-900 truncate">{user.name}</h3>
+                  <p className="text-xs text-gray-600 truncate">{user.email}</p>
                 </div>
-                <div className="flex flex-col items-end gap-2">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}`}>
+                <div className="flex flex-col items-end gap-1">
+                  <span className={`px-2 py-1 rounded text-xs font-semibold whitespace-nowrap ${getRoleBadgeColor(user.role)}`}>
                     {user.role}
                   </span>
-                  {/* ✅ Enhanced: Real-time status indicator */}
-                  <div className="flex items-center space-x-1">
-                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                    <span className="text-xs text-green-600">Live</span>
-                  </div>
-                  <span className={`w-3 h-3 rounded-full ${user.isActive ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                  <span className={`w-2 h-2 rounded-full ${user.isActive ? 'bg-green-500' : 'bg-red-500'}`} title={user.isActive ? 'Active' : 'Inactive'}></span>
                 </div>
               </div>
 
-              <div className="text-sm text-gray-500 mb-4">
-                <div>Joined: {new Date(user.createdAt).toLocaleDateString()}</div>
+              {/* User Info */}
+              <div className="space-y-2 mb-3 flex-1">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-500">Status:</span>
+                  <span className={`text-xs font-medium ${user.isActive ? 'text-green-600' : 'text-red-600'}`}>
+                    {user.isActive ? '✓ Active' : '✕ Inactive'}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-500">Joined:</span>
+                  <span className="text-xs text-gray-700 whitespace-nowrap">
+                    {new Date(user.createdAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </span>
+                </div>
+
                 {user.lastLogin && (
-                  <div>Last Login: {new Date(user.lastLogin).toLocaleDateString()}</div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-gray-500">Last Login:</span>
+                    <span className="text-xs text-gray-700 whitespace-nowrap">
+                      {new Date(user.lastLogin).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric'
+                      })}
+                    </span>
+                  </div>
                 )}
-                {/* ✅ Enhanced: Show data source if available */}
-                {user.source && (
-                  <div className="text-xs text-blue-500">Source: {user.source}</div>
-                )}
+
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-500">Updated:</span>
+                  <span className="text-xs text-gray-700 whitespace-nowrap">
+                    {new Date(user.updatedAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric'
+                    })}
+                  </span>
+                </div>
               </div>
 
-              <div className="flex gap-2">
-                <Button 
-                  onClick={() => viewUserProfile(user)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
-                >
-                  👤 View Profile
-                </Button>
-              </div>
+              {/* Action Button */}
+              <Button 
+                onClick={() => viewUserProfile(user)}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 rounded-lg transition-colors mt-auto"
+              >
+                👤 View Profile
+              </Button>
             </Card>
           ))
         ) : (
-          <div className="col-span-full text-center py-12">
-            <p className="text-gray-500 text-lg">No users found</p>
-            <p className="text-gray-400 mt-2">
+          <Card className="col-span-full p-12 text-center">
+            <div className="text-6xl mb-4">👥</div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No users found</h3>
+            <p className="text-gray-600">
               {filter === 'all' 
                 ? 'No users registered yet' 
                 : `No ${filter}s found`}
             </p>
-          </div>
+          </Card>
         )}
       </div>
 
