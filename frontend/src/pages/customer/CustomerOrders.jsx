@@ -238,18 +238,18 @@ export default function CustomerOrders() {
 
       {/* Order Details Modal */}
       {selectedOrder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000] p-4 overflow-y-auto">
           <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               {/* Modal Header */}
-              <div className="flex justify-between items-start mb-6 pb-4 border-b">
+              <div className="flex justify-between items-start mb-4 sm:mb-6 pb-3 sm:pb-4 border-b">
                 <div>
-                  <h2 className="text-2xl font-bold">Order Details</h2>
-                  <p className="text-gray-500">Order #{selectedOrder.displayOrderId || selectedOrder._id.slice(-8).toUpperCase()}</p>
+                  <h2 className="text-xl sm:text-2xl font-bold">Order Details</h2>
+                  <p className="text-sm sm:text-base text-gray-500">Order #{selectedOrder.displayOrderId || selectedOrder._id.slice(-8).toUpperCase()}</p>
                 </div>
                 <button
                   onClick={() => setSelectedOrder(null)}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -258,10 +258,10 @@ export default function CustomerOrders() {
               </div>
 
               {/* Order Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
                 <div>
-                  <h3 className="text-lg font-semibold mb-3">Order Information</h3>
-                  <div className="space-y-2">
+                  <h3 className="text-base sm:text-lg font-semibold mb-3">Order Information</h3>
+                  <div className="space-y-2 text-sm sm:text-base">
                     <p><span className="font-medium">Order Date:</span> {new Date(selectedOrder.createdAt).toLocaleDateString()}</p>
                     <p><span className="font-medium">Status:</span> 
                       <span className={`ml-2 px-3 py-1 rounded-full text-sm ${getStatusColor(selectedOrder.status)}`}>
@@ -294,8 +294,8 @@ export default function CustomerOrders() {
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold mb-3">Shipping Address</h3>
-                  <div className="text-gray-600">
+                  <h3 className="text-base sm:text-lg font-semibold mb-3">Shipping Address</h3>
+                  <div className="text-gray-600 text-sm sm:text-base">
                     <p>{selectedOrder.shippingAddress?.name || 'N/A'}</p>
                     <p>{selectedOrder.shippingAddress?.street || 'N/A'}</p>
                     <p>{selectedOrder.shippingAddress?.city || 'N/A'}, {selectedOrder.shippingAddress?.state || 'N/A'} {selectedOrder.shippingAddress?.zipCode || 'N/A'}</p>
@@ -305,24 +305,24 @@ export default function CustomerOrders() {
 
               {/* Products */}
               <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-4">Order Items</h3>
-                <div className="space-y-4">
+                <h3 className="text-base sm:text-lg font-semibold mb-4">Order Items</h3>
+                <div className="space-y-3 sm:space-y-4">
                   {selectedOrder.products?.map((item, i) => (
-                    <div key={i} className="flex items-center gap-4 p-4 border rounded-lg">
+                    <div key={i} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 border rounded-lg">
                       {item.productId?.images?.[0] && (
                         <img 
                           src={item.productId.images[0]} 
                           alt={item.title}
-                          className="w-20 h-20 object-cover rounded-lg" 
+                          className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg flex-shrink-0" 
                         />
                       )}
-                      <div className="flex-1">
-                        <h4 className="font-medium text-lg">{item.title}</h4>
-                        <p className="text-gray-500">Quantity: {item.quantity}</p>
-                        <p className="text-gray-500">Unit Price: {formatPrice(item.price)}</p>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-sm sm:text-lg truncate">{item.title}</h4>
+                        <p className="text-xs sm:text-sm text-gray-500">Quantity: {item.quantity}</p>
+                        <p className="text-xs sm:text-sm text-gray-500">Unit Price: {formatPrice(item.price)}</p>
                       </div>
-                      <div className="text-right">
-                        <p className="text-lg font-semibold">{formatPrice(item.price * item.quantity)}</p>
+                      <div className="text-left sm:text-right w-full sm:w-auto">
+                        <p className="text-base sm:text-lg font-semibold">{formatPrice(item.price * item.quantity)}</p>
                       </div>
                     </div>
                   ))}
@@ -331,18 +331,18 @@ export default function CustomerOrders() {
 
               {/* Order Summary */}
               <div className="border-t pt-4">
-                <div className="max-w-md ml-auto space-y-2">
-                  <div className="flex justify-between">
+                <div className="max-w-md sm:ml-auto space-y-2">
+                  <div className="flex justify-between text-sm sm:text-base">
                     <span>Subtotal:</span>
                     <span>{formatPrice((selectedOrder.totalPrice + (selectedOrder.discount || 0)))}</span>
                   </div>
                   {selectedOrder.discount > 0 && (
-                    <div className="flex justify-between text-green-600">
+                    <div className="flex justify-between text-green-600 text-sm sm:text-base">
                       <span>Discount:</span>
                       <span>-{formatPrice(selectedOrder.discount)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-xl font-bold border-t pt-2">
+                  <div className="flex justify-between text-lg sm:text-xl font-bold border-t pt-2">
                     <span>Total:</span>
                     <span>{formatPrice(selectedOrder.totalPrice)}</span>
                   </div>

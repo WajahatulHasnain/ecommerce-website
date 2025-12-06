@@ -43,6 +43,14 @@ export default function AdminOrders() {
 
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
+      // Show confirmation for cancel action
+      if (newStatus === 'cancelled') {
+        const confirmCancel = window.confirm(
+          'Are you sure you want to cancel this order? This action will notify the customer and cannot be undone.'
+        );
+        if (!confirmCancel) return;
+      }
+
       const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
       const response = await api.put(`/admin/orders/${orderId}/status`, 
         { status: newStatus },
@@ -56,6 +64,7 @@ export default function AdminOrders() {
             ...order, 
             status: newStatus,
             paymentStatus: newStatus === 'delivered' ? 'completed' : 
+                          newStatus === 'cancelled' ? 'cancelled' :
                           ['pending', 'processing', 'shipped'].includes(newStatus) ? 'pending' : order.paymentStatus
           } : order
         ));
@@ -63,6 +72,10 @@ export default function AdminOrders() {
         // Show success message with payment status update info
         if (newStatus === 'delivered') {
           alert(`Order marked as delivered! Payment status updated to 'Paid'.`);
+        } else if (newStatus === 'cancelled') {
+          alert(`Order has been cancelled. Customer will be notified.`);
+        } else if (newStatus === 'processing') {
+          alert(`Order approved and is now being processed.`);
         } else {
           alert(`Order status updated to ${newStatus}`);
         }
@@ -243,12 +256,20 @@ export default function AdminOrders() {
                 {/* Action Buttons */}
                 <div className="space-y-2 mt-auto">
                   {order.status === 'pending' && (
-                    <Button
-                      onClick={() => updateOrderStatus(order._id, 'processing')}
-                      className="w-full bg-blue-600 text-white text-xs py-2 hover:bg-blue-700"
-                    >
-                      🔄 Process
-                    </Button>
+                    <>
+                      <Button
+                        onClick={() => updateOrderStatus(order._id, 'processing')}
+                        className="w-full bg-green-600 text-white text-xs py-2 hover:bg-green-700"
+                      >
+                        ✅ Approve Order
+                      </Button>
+                      <Button
+                        onClick={() => updateOrderStatus(order._id, 'cancelled')}
+                        className="w-full bg-red-600 text-white text-xs py-2 hover:bg-red-700"
+                      >
+                        ❌ Cancel Order
+                      </Button>
+                    </>
                   )}
                   
                   {order.status === 'processing' && (
@@ -267,6 +288,12 @@ export default function AdminOrders() {
                     >
                       ✅ Delivered
                     </Button>
+                  )}
+
+                  {order.status === 'cancelled' && (
+                    <div className="w-full bg-red-100 text-red-800 text-xs py-2 px-3 rounded text-center font-medium">
+                      ❌ Order Cancelled
+                    </div>
                   )}
                   
                   <Button 
@@ -297,16 +324,16 @@ export default function AdminOrders() {
 
       {/* Order Details Modal */}
       {showDetailModal && selectedOrder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000] p-4 overflow-y-auto">
           <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">
+            <div className="p-4 sm:p-6">
+              <div className="flex justify-between items-center mb-4 sm:mb-6">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
                   Order Details {selectedOrder.orderId || `Order${selectedOrder.orderNumber}` || selectedOrder._id.slice(-4)}
                 </h2>
                 <button
                   onClick={() => setShowDetailModal(false)}
-                  className="text-gray-400 hover:text-gray-600 text-2xl"
+                  className="text-gray-400 hover:text-gray-600 text-2xl p-1 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   ×
                 </button>
@@ -361,40 +388,42 @@ export default function AdminOrders() {
               {/* Order Items */}
               <Card className="p-4 mb-6">
                 <h3 className="font-semibold text-gray-900 mb-3">Order Items</h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="border-b">
-                      <tr className="text-left">
-                        <th className="pb-2">Product</th>
-                        <th className="pb-2">Price</th>
-                        <th className="pb-2">Quantity</th>
-                        <th className="pb-2">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedOrder.products?.map((item, index) => (
-                        <tr key={index} className="border-b">
-                          <td className="py-3">
-                            <div className="flex items-center gap-3">
-                              {item.imageUrl && (
-                                <img 
-                                  src={item.imageUrl} 
-                                  alt={item.title}
-                                  className="w-12 h-12 object-cover rounded"
-                                />
-                              )}
-                              <div>
-                                <div className="font-medium">{item.title}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-3">${item.price?.toFixed(2)}</td>
-                          <td className="py-3">{item.quantity}</td>
-                          <td className="py-3 font-semibold">${(item.price * item.quantity).toFixed(2)}</td>
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <div className="inline-block min-w-full align-middle">
+                    <table className="min-w-full text-sm">
+                      <thead className="border-b">
+                        <tr className="text-left">
+                          <th className="pb-2 px-2 sm:px-0">Product</th>
+                          <th className="pb-2 px-2 sm:px-0 whitespace-nowrap">Price</th>
+                          <th className="pb-2 px-2 sm:px-0 whitespace-nowrap">Quantity</th>
+                          <th className="pb-2 px-2 sm:px-0 whitespace-nowrap">Total</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {selectedOrder.products?.map((item, index) => (
+                          <tr key={index} className="border-b">
+                            <td className="py-3 px-2 sm:px-0">
+                              <div className="flex items-center gap-2 sm:gap-3">
+                                {item.imageUrl && (
+                                  <img 
+                                    src={item.imageUrl} 
+                                    alt={item.title}
+                                    className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded flex-shrink-0"
+                                  />
+                                )}
+                                <div className="min-w-0">
+                                  <div className="font-medium text-xs sm:text-sm truncate">{item.title}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-2 sm:px-0 whitespace-nowrap">${item.price?.toFixed(2)}</td>
+                            <td className="py-3 px-2 sm:px-0 text-center">{item.quantity}</td>
+                            <td className="py-3 px-2 sm:px-0 font-semibold whitespace-nowrap">${(item.price * item.quantity).toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
 
                 {/* Order Totals */}
@@ -451,10 +480,64 @@ export default function AdminOrders() {
                 </div>
               </Card>
 
-              <div className="flex justify-end">
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-3 mt-4">
+                {selectedOrder.status === 'pending' && (
+                  <>
+                    <Button
+                      onClick={() => {
+                        updateOrderStatus(selectedOrder._id, 'processing');
+                        setShowDetailModal(false);
+                      }}
+                      className="bg-green-600 text-white hover:bg-green-700 px-6 py-2"
+                    >
+                      ✅ Approve Order
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        updateOrderStatus(selectedOrder._id, 'cancelled');
+                        setShowDetailModal(false);
+                      }}
+                      className="bg-red-600 text-white hover:bg-red-700 px-6 py-2"
+                    >
+                      ❌ Cancel Order
+                    </Button>
+                  </>
+                )}
+                
+                {selectedOrder.status === 'processing' && (
+                  <Button
+                    onClick={() => {
+                      updateOrderStatus(selectedOrder._id, 'shipped');
+                      setShowDetailModal(false);
+                    }}
+                    className="bg-purple-600 text-white hover:bg-purple-700 px-6 py-2"
+                  >
+                    🚚 Mark as Shipped
+                  </Button>
+                )}
+                
+                {selectedOrder.status === 'shipped' && (
+                  <Button
+                    onClick={() => {
+                      updateOrderStatus(selectedOrder._id, 'delivered');
+                      setShowDetailModal(false);
+                    }}
+                    className="bg-green-600 text-white hover:bg-green-700 px-6 py-2"
+                  >
+                    ✅ Mark as Delivered
+                  </Button>
+                )}
+
+                {selectedOrder.status === 'cancelled' && (
+                  <div className="bg-red-100 text-red-800 px-6 py-2 rounded font-medium">
+                    ❌ This order has been cancelled
+                  </div>
+                )}
+
                 <Button
                   onClick={() => setShowDetailModal(false)}
-                  className="bg-gray-600 text-white hover:bg-gray-700"
+                  className="bg-gray-600 text-white hover:bg-gray-700 px-6 py-2"
                 >
                   Close
                 </Button>

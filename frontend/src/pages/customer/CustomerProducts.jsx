@@ -730,7 +730,7 @@ export default function CustomerProducts() {
 
         {/* Purchase Modal */}
         {showPurchaseModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000] p-2 sm:p-4 overflow-y-auto">
             <div className="bg-white rounded-lg sm:rounded-xl max-w-xs sm:max-w-lg md:max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
               <div className="p-4 sm:p-6">
                 <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Checkout</h2>
@@ -945,7 +945,7 @@ export default function CustomerProducts() {
         
         {/* Product Details Modal */}
         {selectedProduct && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[10000] p-4 overflow-y-auto">
             <style>{`
               @keyframes slideUp {
                 from { opacity: 0; transform: translateY(20px); }

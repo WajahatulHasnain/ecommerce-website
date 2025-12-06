@@ -55,76 +55,76 @@ export default function AdminLayout() {
 
       {/* Sidebar */}
       <div className={`bg-warm-white shadow-lg border-r border-warm-gray-100 transition-all duration-300 ${
-        // Mobile: Full overlay when open, hidden when closed
+        // Mobile: 20% width when open, hidden when closed
         // Desktop: Fixed width sidebar
         sidebarOpen 
-          ? 'fixed inset-0 z-50 w-full lg:relative lg:w-64 lg:inset-auto' 
+          ? 'fixed left-0 top-0 bottom-0 z-50 w-[20%] min-w-[150px] lg:relative lg:w-64' 
           : 'hidden lg:block lg:w-16'
       }`}>
-        {/* Mobile backdrop */}
+        {/* No backdrop on mobile to keep content visible */}
         {sidebarOpen && (
           <div 
-            className="lg:hidden absolute inset-0 bg-black/50 z-40"
+            className="hidden lg:block absolute inset-0 bg-black/50 z-40"
             onClick={handleSidebarToggle}
           />
         )}
         
         {/* Sidebar content */}
         <div className={`relative z-50 bg-warm-white h-full ${
-          sidebarOpen ? 'w-64' : 'lg:w-16'
+          sidebarOpen ? 'w-full lg:w-64' : 'lg:w-16'
         } transition-all duration-300`}>
-          <div className="p-3 sm:p-4">
+          <div className="p-2 lg:p-3">
             <div className="flex items-center justify-between">
-              <h1 className={`font-bold text-lg sm:text-xl text-warm-gray-800 ${
+              <h1 className={`font-bold text-xs lg:text-lg text-warm-gray-800 truncate ${
                 !sidebarOpen && 'lg:hidden'
               }`}>
-                Admin Panel
+                Admin
               </h1>
               <button
                 onClick={handleSidebarToggle}
-                className="p-1.5 sm:p-2 rounded-lg hover:bg-warm-gray-50 text-etsy-orange"
+                className="p-1 lg:p-1.5 rounded-lg hover:bg-warm-gray-50 text-etsy-orange flex-shrink-0"
               >
-                {sidebarOpen ? '←' : '→'}
+                <span className="text-sm lg:text-base">{sidebarOpen ? '←' : '→'}</span>
               </button>
             </div>
           </div>
 
-        <nav className="mt-4 sm:mt-8">
+        <nav className="mt-2 lg:mt-4">
           {navigation.map((item) => {
             const isActive = location.pathname === item.href;
             return (
               <Link
                 key={item.name}
                 to={item.href}
-                className={`flex items-center px-3 sm:px-4 py-2 sm:py-3 mx-2 rounded-lg transition-colors text-sm sm:text-base ${
+                className={`flex flex-col lg:flex-row items-center px-1 lg:px-3 py-2 lg:py-3 mx-1 lg:mx-2 rounded-lg transition-colors text-xs lg:text-sm ${
                   isActive 
                     ? 'bg-etsy-orange text-white shadow-md' 
                     : 'text-warm-gray-700 hover:bg-warm-gray-50 hover:text-etsy-orange'
                 }`}
               >
-                <span className="text-lg sm:text-2xl mr-2 sm:mr-3">{item.icon}</span>
-                <span className={`${!sidebarOpen && 'lg:hidden'}`}>{item.name}</span>
+                <span className="text-base lg:text-2xl mb-1 lg:mb-0 lg:mr-2">{item.icon}</span>
+                <span className={`text-[10px] lg:text-sm truncate w-full text-center lg:text-left ${!sidebarOpen && 'lg:hidden'}`}>{item.name}</span>
               </Link>
             );
           })}
         </nav>
         
         {/* User info and logout - moved to bottom */}
-        <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 border-t border-warm-gray-100">
-          <div className={`flex items-center space-x-3 mb-2 sm:mb-3 ${
+        <div className="absolute bottom-0 left-0 right-0 p-2 lg:p-3 border-t border-warm-gray-100">
+          <div className={`flex flex-col lg:flex-row items-center lg:space-x-3 mb-2 lg:mb-3 ${
             !sidebarOpen && 'lg:justify-center'
           }`}>
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-lavender rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-sm sm:text-base">
+            <div className="w-8 h-8 lg:w-10 lg:h-10 bg-lavender rounded-full flex items-center justify-center mb-1 lg:mb-0">
+              <span className="text-white font-bold text-xs lg:text-base">
                 {user?.name?.charAt(0) || 'A'}
               </span>
             </div>
             {sidebarOpen && (
-              <div className="flex-1">
-                <p className="font-medium text-warm-gray-800 text-sm sm:text-base truncate">
+              <div className="flex-1 min-w-0 text-center lg:text-left">
+                <p className="font-medium text-warm-gray-800 text-[10px] lg:text-sm truncate">
                   {user?.name}
                 </p>
-                <p className="text-xs sm:text-sm text-warm-gray-500 truncate">
+                <p className="text-[8px] lg:text-xs text-warm-gray-500 truncate">
                   {user?.email}
                 </p>
               </div>
@@ -132,11 +132,12 @@ export default function AdminLayout() {
           </div>
           <button
             onClick={handleLogout}
-            className={`w-full bg-etsy-orange hover:bg-etsy-orange-dark text-white font-medium py-2 rounded-lg transition-colors duration-200 text-sm sm:text-base ${
+            className={`w-full bg-etsy-orange hover:bg-etsy-orange-dark text-white font-medium py-1.5 lg:py-2 rounded-lg transition-colors duration-200 text-xs lg:text-sm ${
               !sidebarOpen && 'lg:px-2'
             }`}
           >
-            {sidebarOpen ? 'Logout' : '🚪'}
+            {sidebarOpen ? <span className="hidden lg:inline">Logout</span> : '🚪'}
+            {sidebarOpen && <span className="lg:hidden">Out</span>}
           </button>
         </div>
         </div>
