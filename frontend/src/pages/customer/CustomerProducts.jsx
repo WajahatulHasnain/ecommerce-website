@@ -569,13 +569,13 @@ export default function CustomerProducts() {
               <div className="w-full">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
                   {products.map(product => (
-                    <div key={product._id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 group">
+                    <div key={product._id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 group">
                       <div className="relative w-full h-80 bg-gray-100 overflow-hidden">
                         {product.imageUrl ? (
                           <img
                             src={product.imageUrl}
                             alt={product.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-warm-gray-400 bg-warm-gray-100">
@@ -594,15 +594,15 @@ export default function CustomerProducts() {
                             }
                             toggleWishlist(product._id);
                           }}
-                          className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-md transition-all duration-200 z-20 ${
+                          className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-md transition-all duration-300 z-20 ${
                             user && wishlist.includes(product._id)
-                              ? 'bg-red-500/90 text-white scale-110'
-                              : 'bg-white/80 text-gray-600 hover:text-red-500 hover:bg-white/95'
-                          } shadow-lg hover:shadow-xl hover:scale-110`}
+                              ? 'bg-red-500/90 text-white shadow-lg'
+                              : 'bg-white/80 text-gray-600 shadow-md hover:text-red-500'
+                          }`}
                           title={!user ? 'Sign in to add to wishlist' : 
                             wishlist.includes(product._id) ? 'Remove from wishlist' : 'Add to wishlist'}
                         >
-                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
                           </svg>
                         </button>
@@ -678,7 +678,7 @@ export default function CustomerProducts() {
                                 addToCart(product);
                               }}
                               disabled={product.stock === 0}
-                              className="px-6 py-3 text-sm bg-etsy-orange/95 text-white rounded-xl font-semibold transition-all duration-200 hover:bg-etsy-orange hover:shadow-xl backdrop-blur-sm transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                              className="px-6 py-3 text-sm bg-etsy-orange/95 text-white rounded-xl font-semibold transition-all duration-200 hover:bg-etsy-orange backdrop-blur-sm hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                             >
                               <span className="text-base">{product.stock === 0 ? '❌' : '🛒'}</span>
                               <span>{product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}</span>
@@ -690,7 +690,7 @@ export default function CustomerProducts() {
                                 e.stopPropagation();
                                 setSelectedProduct(product);
                               }}
-                              className="px-6 py-3 text-sm bg-white/95 text-gray-900 rounded-xl font-semibold transition-all duration-200 hover:bg-white hover:shadow-xl backdrop-blur-sm transform hover:scale-105 flex items-center justify-center space-x-2 border border-white/50"
+                              className="px-6 py-3 text-sm bg-white/95 text-gray-900 rounded-xl font-semibold transition-all duration-200 hover:bg-white backdrop-blur-sm hover:shadow-lg flex items-center justify-center space-x-2 border border-white/50"
                             >
                               <span className="text-base">👁️</span>
                               <span>View Details</span>
@@ -738,92 +738,40 @@ export default function CustomerProducts() {
                 {/* Cart Items */}
                 <div className="mb-4 sm:mb-6">
                   <h3 className="font-semibold mb-2 text-sm sm:text-base">Order Items</h3>
-                  <div className="grid grid-cols-1 gap-3 sm:gap-4">
+                  <div className="space-y-2">
                     {cart.map(item => (
-                      <div key={item.productId} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 group">
-                        <div className="relative w-full h-80 bg-gray-100 overflow-hidden">
-                          {item.imageUrl ? (
-                            <>
-                              <img
-                                src={item.imageUrl}
-                                alt={item.title}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                              />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
-                            </>
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-200">
-                              <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                              </svg>
-                            </div>
-                          )}
-                          
+                      <div key={item.productId} className="flex justify-between items-center p-3 border rounded-lg bg-white">
+                        <div className="flex items-center space-x-3 flex-1">
+                          <img
+                            src={item.imageUrl || '/placeholder.png'}
+                            alt={item.title}
+                            className="w-12 h-12 object-cover rounded"
+                          />
+                          <div className="flex-1">
+                            <span className="font-medium text-sm sm:text-base">{item.title}</span>
+                            <div className="text-xs sm:text-sm text-gray-600">Qty: {item.qty}</div>
+                          </div>
+                        </div>
+                        <div className="text-right flex items-center gap-3">
+                          <div>
+                            {item.hasDiscount ? (
+                              <div>
+                                <div className="text-green-600 font-semibold text-sm">${(item.price * item.qty).toFixed(2)}</div>
+                                <div className="text-xs text-gray-400 line-through">${(item.originalPrice * item.qty).toFixed(2)}</div>
+                              </div>
+                            ) : (
+                              <div className="font-semibold text-sm">${(item.price * item.qty).toFixed(2)}</div>
+                            )}
+                          </div>
                           <button
                             onClick={() => removeFromCart(item.productId)}
-                            className="absolute top-3 right-3 p-2.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-red-500/90 hover:border-red-400 transition-all duration-300 group z-20 shadow-lg hover:shadow-xl hover:scale-110"
+                            className="text-red-500 hover:text-red-700 transition-colors"
                             title="Remove from cart"
                           >
-                            <svg className="w-5 h-5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                           </button>
-                          
-                          {item.hasDiscount && (
-                            <div className="absolute top-3 left-3 bg-green-500 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow-lg backdrop-blur-sm">
-                              DISCOUNT
-                            </div>
-                          )}
-                          
-                          <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-                            <h3 className="font-semibold text-white text-base mb-3 line-clamp-2 drop-shadow-lg">
-                              {item.title}
-                            </h3>
-                            
-                            <div className="flex items-end justify-between mb-3">
-                              <div className="flex items-center gap-2">
-                                {item.hasDiscount ? (
-                                  <>
-                                    <span className="text-gray-300 text-sm line-through">
-                                      ${(item.originalPrice * item.qty).toFixed(2)}
-                                    </span>
-                                    <span className="text-white text-2xl font-bold drop-shadow-lg">
-                                      ${(item.price * item.qty).toFixed(2)}
-                                    </span>
-                                  </>
-                                ) : (
-                                  <span className="text-white text-2xl font-bold drop-shadow-lg">
-                                    ${(item.price * item.qty).toFixed(2)}
-                                  </span>
-                                )}
-                              </div>
-                              
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => updateCartQty(item.productId, item.qty - 1)}
-                                  className="bg-white/20 backdrop-blur-md text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/30 transition-all duration-200"
-                                >
-                                  −
-                                </button>
-                                <span className="bg-white/90 text-gray-900 px-3 py-1 rounded-full text-sm font-bold min-w-[3rem] text-center">
-                                  Qty: {item.qty}
-                                </span>
-                                <button
-                                  onClick={() => updateCartQty(item.productId, item.qty + 1)}
-                                  disabled={item.qty >= item.maxStock}
-                                  className="bg-white/20 backdrop-blur-md text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/30 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  +
-                                </button>
-                              </div>
-                            </div>
-                            
-                            <div className="text-center">
-                              <span className="bg-blue-500/90 text-white px-3 py-1 text-xs font-bold rounded-full backdrop-blur-md shadow-lg">
-                                {item.maxStock - item.qty} left in stock
-                              </span>
-                            </div>
-                          </div>
                         </div>
                       </div>
                     ))}
@@ -954,44 +902,24 @@ export default function CustomerProducts() {
                   </div>
                   
                   {/* Payment Method Selection */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
-                    <div className="space-y-2">
-                      <label className="flex items-center space-x-3 cursor-pointer p-3 border rounded-lg bg-green-50 border-green-200">
-                        <input
-                          type="radio"
-                          name="paymentMethod"
-                          value="cod"
-                          checked={customerInfo.paymentMethod === 'cod'}
-                          onChange={(e) => setCustomerInfo(prev => ({ ...prev, paymentMethod: e.target.value }))}
-                          className="w-4 h-4 text-green-600 focus:ring-green-500 border-gray-300"
-                        />
-                        <div className="flex items-center space-x-2">
-                          <span className="text-2xl">💵</span>
-                          <div>
-                            <span className="font-medium text-gray-900">Cash on Delivery (COD)</span>
-                            <p className="text-sm text-gray-600">Pay when your order is delivered</p>
-                          </div>
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <label className="flex items-center space-x-3 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="cod"
+                        checked={customerInfo.paymentMethod === 'cod'}
+                        onChange={(e) => setCustomerInfo(prev => ({ ...prev, paymentMethod: e.target.value }))}
+                        className="w-4 h-4 text-green-600 focus:ring-green-500 border-gray-300"
+                      />
+                      <div className="flex items-center space-x-2">
+                        <span className="text-2xl">💵</span>
+                        <div>
+                          <span className="font-medium text-gray-900">Cash on Delivery (COD)</span>
+                          <p className="text-sm text-gray-600">Pay when your order is delivered to your doorstep</p>
                         </div>
-                      </label>
-                      
-                      <label className="flex items-center space-x-3 cursor-pointer p-3 border rounded-lg opacity-50">
-                        <input
-                          type="radio"
-                          name="paymentMethod"
-                          value="card"
-                          disabled
-                          className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                        />
-                        <div className="flex items-center space-x-2">
-                          <span className="text-2xl">💳</span>
-                          <div>
-                            <span className="font-medium text-gray-500">Credit/Debit Card</span>
-                            <p className="text-sm text-gray-500">Coming soon</p>
-                          </div>
-                        </div>
-                      </label>
-                    </div>
+                      </div>
+                    </label>
                   </div>
                 </div>
 
@@ -1017,17 +945,26 @@ export default function CustomerProducts() {
         
         {/* Product Details Modal */}
         {selectedProduct && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <style>{`
+              @keyframes slideUp {
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
+              }
+              .modal-content {
+                animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+              }
+            `}</style>
+            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto modal-content shadow-2xl">
               <div className="p-6">
                 <div className="flex justify-between items-start mb-6">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Product Details</h2>
+                    <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Product Details</h2>
                     <p className="text-lg text-gray-600 mt-1">{selectedProduct.title}</p>
                   </div>
                   <button
                     onClick={() => setSelectedProduct(null)}
-                    className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+                    className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 text-3xl font-bold p-2 rounded-full transition-colors duration-200"
                   >
                     ×
                   </button>
@@ -1036,12 +973,12 @@ export default function CustomerProducts() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {/* Product Image */}
                   <div className="relative">
-                    <div className="w-full h-96 bg-gray-100 rounded-lg overflow-hidden">
+                    <div className="w-full h-96 bg-gray-100 rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
                       {selectedProduct.imageUrl ? (
                         <img
                           src={selectedProduct.imageUrl}
                           alt={selectedProduct.title}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover hover:scale-110 transition-transform duration-700"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-400">
@@ -1053,7 +990,7 @@ export default function CustomerProducts() {
                     </div>
                     
                     {selectedProduct.discount?.type && selectedProduct.discount.value > 0 && (
-                      <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-2 rounded-lg text-sm font-semibold">
+                      <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-2 rounded-lg text-sm font-semibold shadow-lg">
                         {selectedProduct.discount.type === 'percentage' 
                           ? `${selectedProduct.discount.value}% OFF`
                           : `$${selectedProduct.discount.value} OFF`
@@ -1122,10 +1059,10 @@ export default function CustomerProducts() {
                           setSelectedProduct(null);
                         }}
                         disabled={selectedProduct.stock === 0}
-                        className="flex-1 bg-orange-500 text-white hover:bg-orange-600 py-3 px-6 rounded-lg transition-colors disabled:bg-gray-300 font-medium"
+                        className="flex-1 bg-orange-500 text-white hover:bg-orange-600 py-3 px-6 rounded-lg transition-colors duration-200 disabled:bg-gray-300 font-medium hover:shadow-lg"
                       >
                         {selectedProduct.stock === 0 ? 'Out of Stock' : 
-                         !user ? '🔒 Sign in to Add to Cart' : 'Add to Cart'}
+                         !user ? '🔒 Sign in to Add to Cart' : '🛒 Add to Cart'}
                       </button>
                       <button
                         onClick={() => {
@@ -1135,7 +1072,7 @@ export default function CustomerProducts() {
                           }
                           toggleWishlist(selectedProduct._id);
                         }}
-                        className={`px-6 py-3 rounded-lg transition-colors font-medium ${
+                        className={`px-6 py-3 rounded-lg transition-colors duration-200 font-medium hover:shadow-lg ${
                           user && wishlist.includes(selectedProduct._id)
                             ? 'bg-red-500 text-white hover:bg-red-600'
                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'

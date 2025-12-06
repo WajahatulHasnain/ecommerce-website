@@ -3,10 +3,21 @@ import { Outlet, Link, useLocation, useNavigate, Navigate } from "react-router-d
 import { useAuth } from '../../context/AuthContext';
 
 export default function AdminLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false); // Default closed on mobile
+  // Get sidebar state from localStorage or default to false
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    const saved = localStorage.getItem('adminSidebarOpen');
+    return saved ? JSON.parse(saved) : false;
+  });
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Persist sidebar state to localStorage when it changes
+  const handleSidebarToggle = () => {
+    const newState = !sidebarOpen;
+    setSidebarOpen(newState);
+    localStorage.setItem('adminSidebarOpen', JSON.stringify(newState));
+  };
 
   const navigation = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: '📊' },
@@ -34,7 +45,7 @@ export default function AdminLayout() {
             Admin Panel
           </h1>
           <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
+            onClick={handleSidebarToggle}
             className="p-2 rounded-lg hover:bg-warm-gray-50 text-etsy-orange text-lg sm:text-xl"
           >
             ☰
@@ -54,7 +65,7 @@ export default function AdminLayout() {
         {sidebarOpen && (
           <div 
             className="lg:hidden absolute inset-0 bg-black/50 z-40"
-            onClick={() => setSidebarOpen(false)}
+            onClick={handleSidebarToggle}
           />
         )}
         
@@ -70,7 +81,7 @@ export default function AdminLayout() {
                 Admin Panel
               </h1>
               <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
+                onClick={handleSidebarToggle}
                 className="p-1.5 sm:p-2 rounded-lg hover:bg-warm-gray-50 text-etsy-orange"
               >
                 {sidebarOpen ? '←' : '→'}
@@ -85,7 +96,6 @@ export default function AdminLayout() {
               <Link
                 key={item.name}
                 to={item.href}
-                onClick={() => setSidebarOpen(false)} 
                 className={`flex items-center px-3 sm:px-4 py-2 sm:py-3 mx-2 rounded-lg transition-colors text-sm sm:text-base ${
                   isActive 
                     ? 'bg-etsy-orange text-white shadow-md' 

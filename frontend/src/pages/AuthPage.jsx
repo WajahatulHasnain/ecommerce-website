@@ -20,6 +20,7 @@ export default function AuthPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
+  const [isNavigating, setIsNavigating] = useState(false);
   const { login, adminLogin } = useAuth();
 
   // Email validation
@@ -152,7 +153,7 @@ export default function AuthPage() {
   const passwordValidation = validatePassword(formData.password);
 
   return (
-    <div className="min-h-screen bg-warm-cream flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className={`min-h-screen bg-warm-cream flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 transition-opacity duration-300 ${isNavigating ? 'opacity-0' : 'opacity-100'}`}>
       <div className="max-w-md w-full space-y-8">
         
         {/* Simple Header */}
@@ -374,24 +375,25 @@ export default function AuthPage() {
         </div>
 
         {/* Guest Mode Links */}
-        <div className="text-center pt-4 border-t border-warm-gray-200">
-          <p className="text-sm text-warm-gray-500 mb-3">Want to browse first?</p>
-          <div className="space-x-4">
-            <button
-              type="button"
-              onClick={() => navigate('/')}
-              className="text-sm text-warm-gray-600 hover:text-etsy-orange transition-colors"
-            >
-              Continue as Guest
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/products')}
-              className="text-sm text-warm-gray-600 hover:text-etsy-orange transition-colors"
-            >
-              Browse Products
-            </button>
-          </div>
+        <div className="pt-6 border-t border-warm-gray-200">
+          <p className="text-center text-sm font-medium text-warm-gray-600 mb-4">Want to browse first?</p>
+          <button
+            type="button"
+            onClick={() => {
+              setIsNavigating(true);
+              setTimeout(() => navigate('/'), 300);
+            }}
+            disabled={isNavigating}
+            className={`w-full bg-gradient-to-r from-etsy-orange to-etsy-orange-light hover:from-etsy-orange-dark hover:to-etsy-orange text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center space-x-3 group disabled:opacity-75 ${isNavigating ? 'opacity-50' : ''}`}
+          >
+            <svg className={`w-6 h-6 group-hover:scale-110 transition-transform duration-300 ${isNavigating ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            <div className={`flex flex-col items-start transition-opacity duration-300 ${isNavigating ? 'opacity-75' : ''}`}>
+              <span className="text-base">{isNavigating ? 'Loading...' : 'Continue as Guest'}</span>
+              <span className="text-xs opacity-90">{isNavigating ? 'Redirecting' : 'Browse products instantly'}</span>
+            </div>
+          </button>
         </div>
       </div>
     </div>
