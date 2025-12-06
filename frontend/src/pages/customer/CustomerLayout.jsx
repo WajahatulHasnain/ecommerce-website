@@ -3,11 +3,22 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 export default function CustomerLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false); // Vertical sidebar state
+  // Get sidebar state from localStorage or default to false
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    const saved = localStorage.getItem('customerSidebarOpen');
+    return saved ? JSON.parse(saved) : false;
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Persist sidebar state to localStorage when it changes
+  const handleSidebarToggle = () => {
+    const newState = !sidebarOpen;
+    setSidebarOpen(newState);
+    localStorage.setItem('customerSidebarOpen', JSON.stringify(newState));
+  };
 
   const navigation = [
     { name: 'Dashboard', href: '/customer/dashboard', icon: '🏠' },
@@ -38,7 +49,7 @@ export default function CustomerLayout() {
             <div className="flex items-center space-x-4 md:space-x-8">
               {/* Simple Menu Button - Upper Left */}
               <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
+                onClick={handleSidebarToggle}
                 className="p-2 rounded-md hover:bg-warm-gray-50 transition-colors"
                 title="Toggle Menu"
               >
@@ -119,82 +130,94 @@ export default function CustomerLayout() {
 
       {/* Main Layout with Sidebar */}
       <div className="flex flex-1 relative">
-        {/* Vertical Sidebar */}
-        {sidebarOpen && (
-          <div className="fixed inset-0 z-50 flex">
-            {/* Backdrop */}
+        {/* Sidebar */}
+        <div className={`bg-warm-white shadow-lg border-r border-warm-gray-100 transition-all duration-300 ${
+          // Mobile: Full overlay when open, hidden when closed
+          // Desktop: Fixed width sidebar
+          sidebarOpen 
+            ? 'fixed inset-0 z-50 w-full lg:relative lg:w-64 lg:inset-auto' 
+            : 'hidden lg:block lg:w-16'
+        }`}>
+          {/* Mobile backdrop */}
+          {sidebarOpen && (
             <div 
-              className="fixed inset-0 bg-black/50"
-              onClick={() => setSidebarOpen(false)}
+              className="lg:hidden absolute inset-0 bg-black/50 z-40"
+              onClick={handleSidebarToggle}
             />
-            
-            {/* Sidebar Content */}
-            <div className="relative w-64 h-full bg-warm-white shadow-lg border-r border-warm-gray-200 animate-slideIn">
-              {/* Sidebar Header */}
-              <div className="flex items-center justify-between p-4 border-b border-warm-gray-200 bg-warm-cream">
-                <h3 className="font-semibold text-lg text-warm-gray-800">Menu</h3>
+          )}
+          
+          {/* Sidebar content */}
+          <div className={`relative z-50 bg-warm-white h-full ${
+            sidebarOpen ? 'w-64' : 'lg:w-16'
+          } transition-all duration-300`}>
+            <div className="p-3 sm:p-4">
+              <div className="flex items-center justify-between">
+                <h1 className={`font-bold text-lg sm:text-xl text-warm-gray-800 ${
+                  !sidebarOpen && 'lg:hidden'
+                }`}>
+                  Customer Menu
+                </h1>
                 <button
-                  onClick={() => setSidebarOpen(false)}
-                  className="p-1.5 rounded-md hover:bg-warm-gray-100 text-etsy-orange"
+                  onClick={handleSidebarToggle}
+                  className="p-1.5 sm:p-2 rounded-lg hover:bg-warm-gray-50 text-etsy-orange"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              {/* Sidebar Navigation */}
-              <nav className="p-4 space-y-1">
-                {navigation.map((item) => {
-                  const isActive = location.pathname === item.href;
-                  return (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      onClick={() => setSidebarOpen(false)}
-                      className={`flex items-center space-x-3 px-4 py-3 rounded-md transition-colors duration-200 ${
-                        isActive 
-                          ? 'bg-etsy-orange text-white font-medium' 
-                          : 'text-warm-gray-700 hover:bg-warm-gray-50 hover:text-etsy-orange'
-                      }`}
-                    >
-                      <span className="text-lg">{item.icon}</span>
-                      <span>{item.name}</span>
-                    </Link>
-                  );
-                })}
-              </nav>
-
-              {/* Sidebar Footer */}
-              <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-warm-gray-200 bg-warm-cream">
-                <div className="flex items-center space-x-3 mb-3">
-                  <div className="w-8 h-8 bg-etsy-orange rounded-full flex items-center justify-center">
-                    <span className="text-white font-medium text-sm">
-                      {user?.name?.charAt(0) || 'C'}
-                    </span>
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-warm-gray-800 text-sm truncate">
-                      {user?.name}
-                    </p>
-                    <p className="text-xs text-warm-gray-600 truncate">
-                      Customer
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    setSidebarOpen(false);
-                    handleLogout();
-                  }}
-                  className="w-full bg-etsy-orange hover:bg-etsy-orange-dark text-white font-medium py-2 px-4 rounded-md transition-colors duration-200 text-sm"
-                >
-                  Logout
+                  {sidebarOpen ? '←' : '→'}
                 </button>
               </div>
             </div>
+
+          <nav className="mt-4 sm:mt-8">
+            {navigation.map((item) => {
+              const isActive = location.pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={`flex items-center px-3 sm:px-4 py-2 sm:py-3 mx-2 rounded-lg transition-colors text-sm sm:text-base ${
+                    isActive 
+                      ? 'bg-etsy-orange text-white shadow-md' 
+                      : 'text-warm-gray-700 hover:bg-warm-gray-50 hover:text-etsy-orange'
+                  }`}
+                >
+                  <span className="text-lg sm:text-2xl mr-2 sm:mr-3">{item.icon}</span>
+                  <span className={`${!sidebarOpen && 'lg:hidden'}`}>{item.name}</span>
+                </Link>
+              );
+            })}
+          </nav>
+          
+          {/* User info and logout - moved to bottom */}
+          <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 border-t border-warm-gray-100">
+            <div className={`flex items-center space-x-3 mb-2 sm:mb-3 ${
+              !sidebarOpen && 'lg:justify-center'
+            }`}>
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-lavender rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-sm sm:text-base">
+                  {user?.name?.charAt(0) || 'C'}
+                </span>
+              </div>
+              {sidebarOpen && (
+                <div className="flex-1">
+                  <p className="font-medium text-warm-gray-800 text-sm sm:text-base truncate">
+                    {user?.name}
+                  </p>
+                  <p className="text-xs sm:text-sm text-warm-gray-500 truncate">
+                    {user?.email}
+                  </p>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={handleLogout}
+              className={`w-full bg-etsy-orange hover:bg-etsy-orange-dark text-white font-medium py-2 rounded-lg transition-colors duration-200 text-sm sm:text-base ${
+                !sidebarOpen && 'lg:px-2'
+              }`}
+            >
+              {sidebarOpen ? 'Logout' : '🚪'}
+            </button>
           </div>
-        )}
+          </div>
+        </div>
 
         {/* Main Content */}
         <main className={`flex-1 customer-content transition-all duration-300 ${
