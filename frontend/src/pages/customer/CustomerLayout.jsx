@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import SnapShopLogo from '../../components/SnapShopLogo';
 
 export default function CustomerLayout() {
   // Get sidebar state from localStorage or default to false
@@ -58,7 +59,7 @@ export default function CustomerLayout() {
                 </svg>
               </button>
               
-              <h1 className="text-lg sm:text-xl font-bold text-warm-gray-900 truncate">Ecommerce Store</h1>
+              <SnapShopLogo className="h-8 w-8 sm:h-10 sm:w-10" textClassName="text-lg sm:text-xl" />
               
               {/* Desktop Navigation */}
               <nav className="hidden lg:flex space-x-4 xl:space-x-6">
@@ -152,10 +153,10 @@ export default function CustomerLayout() {
           } transition-all duration-300`}>
             <div className="p-2 lg:p-3">
               <div className="flex items-center justify-between">
-                <h1 className={`font-bold text-xs lg:text-lg text-warm-gray-800 truncate ${
+                <h1 className={`font-bold text-xs lg:text-sm text-warm-gray-800 truncate ${
                   !sidebarOpen && 'lg:hidden'
                 }`}>
-                  Menu
+                  <span className="text-etsy-orange">Snap</span><span className="text-warm-blue">Shop</span>
                 </h1>
                 <button
                   onClick={handleSidebarToggle}

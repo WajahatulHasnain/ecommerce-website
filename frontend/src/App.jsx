@@ -5,6 +5,7 @@ import { SettingsProvider } from "./context/SettingsContext";
 import { GuestProvider } from "./context/GuestContext";
 import { AdminRoute, CustomerRoute } from "./components/ProtectedRoute";
 import AuthRequiredModal from "./components/AuthRequiredModal";
+import SnapShopLogo from "./components/SnapShopLogo";
 
 // Auth pages
 import AuthPage from "./pages/AuthPage";
@@ -45,11 +46,8 @@ function Navigation() {
     <header className="nav-primary">
       <div className="container-custom">
         <div className="flex justify-between items-center h-12 sm:h-14 md:h-16">
-          <Link to="/" className="flex items-center space-x-2 sm:space-x-3">
-            <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 bg-gradient-to-r from-etsy-orange to-etsy-orange-dark rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xs sm:text-sm">E</span>
-            </div>
-            <span className="text-lg sm:text-xl font-bold text-warm-gray-900 truncate">Ecommerce Store</span>
+          <Link to="/" className="flex items-center">
+            <SnapShopLogo className="h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10" textClassName="text-lg sm:text-xl md:text-2xl" />
           </Link>
           
           <nav className="flex items-center space-x-2 sm:space-x-4 md:space-x-6">

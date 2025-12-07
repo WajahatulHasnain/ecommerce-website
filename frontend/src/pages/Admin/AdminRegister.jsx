@@ -5,6 +5,7 @@ import api from "../../utils/api";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import Card from "../../components/ui/Card";
+import SnapShopLogo from "../../components/SnapShopLogo";
 
 export default function AdminRegister() {
   const [form, setForm] = useState({ name: "", email: "", password: "" });
@@ -35,8 +36,11 @@ export default function AdminRegister() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-emerald-100 px-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <SnapShopLogo className="h-16 w-16" textClassName="text-3xl" />
+          </div>
           <h1 className="text-3xl font-bold text-gray-900">Admin Registration</h1>
-          <p className="mt-2 text-gray-600">Create your admin account</p>
+          <p className="mt-2 text-gray-600">Create your SnapShop admin account</p>
         </div>
 
         <Card>

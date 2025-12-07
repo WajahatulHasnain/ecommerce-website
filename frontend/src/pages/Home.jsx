@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
+import SnapShopLogo from "../components/SnapShopLogo";
 
 export default function Home() {
   const [msg, setMsg] = useState("Loading...");
@@ -57,6 +58,9 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-br from-etsy-orange via-warm-blue to-lavender opacity-10"></div>
         <div className="relative container-custom section-padding">
           <div className="text-center max-w-4xl mx-auto">
+            <div className="flex justify-center mb-6 animate-fade-in">
+              <SnapShopLogo className="h-20 w-20 lg:h-24 lg:w-24" textClassName="text-4xl lg:text-5xl" />
+            </div>
             <h1 className="text-5xl lg:text-7xl font-bold text-warm-gray-900 mb-6 animate-fade-in">
               Discover Something 
               <span className="text-gradient block mt-2">Special</span>

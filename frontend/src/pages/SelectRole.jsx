@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import Card from "../components/ui/Card";
+import SnapShopLogo from "../components/SnapShopLogo";
 
 export default function SelectRole() {
   const navigate = useNavigate();
@@ -8,7 +9,10 @@ export default function SelectRole() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 px-4">
       <div className="max-w-4xl w-full">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Welcome to Ecommerce</h1>
+          <div className="flex justify-center mb-6">
+            <SnapShopLogo className="h-16 w-16 lg:h-20 lg:w-20" textClassName="text-3xl lg:text-4xl" />
+          </div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">Welcome to SnapShop</h1>
           <p className="text-xl text-gray-600">Choose how you'd like to continue</p>
         </div>
         

@@ -13,7 +13,7 @@ export const useSettings = () => {
 
 export const SettingsProvider = ({ children }) => {
   const [settings, setSettings] = useState({
-    storeName: 'Ecommerce Store',
+    storeName: 'SnapShop',
     storeDescription: 'Your online shopping destination',
     currency: { code: 'USD', symbol: '$', rate: 1.0 },
     taxRate: 10,

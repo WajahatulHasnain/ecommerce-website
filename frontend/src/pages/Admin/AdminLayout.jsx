@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Outlet, Link, useLocation, useNavigate, Navigate } from "react-router-dom";
 import { useAuth } from '../../context/AuthContext';
+import SnapShopLogo from '../../components/SnapShopLogo';
 
 export default function AdminLayout() {
   // Get sidebar state from localStorage or default to false
@@ -41,9 +42,10 @@ export default function AdminLayout() {
       {/* Mobile Header */}
       <div className="lg:hidden bg-warm-white shadow-sm border-b border-warm-gray-100 p-3 sm:p-4">
         <div className="flex items-center justify-between">
-          <h1 className="font-bold text-lg sm:text-xl text-warm-gray-800">
-            Admin Panel
-          </h1>
+          <div className="flex items-center gap-2">
+            <SnapShopLogo className="h-8 w-8 sm:h-10 sm:w-10" textClassName="text-base sm:text-lg" />
+            <span className="text-xs sm:text-sm text-warm-gray-600 font-medium">Admin</span>
+          </div>
           <button
             onClick={handleSidebarToggle}
             className="p-2 rounded-lg hover:bg-warm-gray-50 text-etsy-orange text-lg sm:text-xl"
@@ -75,10 +77,10 @@ export default function AdminLayout() {
         } transition-all duration-300`}>
           <div className="p-2 lg:p-3">
             <div className="flex items-center justify-between">
-              <h1 className={`font-bold text-xs lg:text-lg text-warm-gray-800 truncate ${
+              <h1 className={`font-bold text-xs lg:text-sm text-warm-gray-800 truncate ${
                 !sidebarOpen && 'lg:hidden'
               }`}>
-                Admin
+                <span className="text-etsy-orange">Snap</span><span className="text-warm-blue">Shop</span>
               </h1>
               <button
                 onClick={handleSidebarToggle}

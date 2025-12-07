@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import api from "../utils/api";
+import SnapShopLogo from "../components/SnapShopLogo";
 
 export default function AuthPage() {
   // Check URL parameters for auth mode
@@ -158,16 +159,14 @@ export default function AuthPage() {
         
         {/* Simple Header */}
         <div className="text-center">
-          <div className="mx-auto h-12 w-12 bg-etsy-orange rounded-full flex items-center justify-center mb-6">
-            <svg className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isLogin ? "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" : "M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"} />
-            </svg>
+          <div className="flex justify-center mb-6">
+            <SnapShopLogo className="h-16 w-16" textClassName="text-3xl" />
           </div>
           <h2 className="text-3xl font-bold text-warm-gray-900 mb-2">
             {isLogin ? 'Welcome back' : 'Create account'}
           </h2>
           <p className="text-warm-gray-600 text-sm">
-            {isLogin ? 'Sign in to your account' : 'Join us today and start shopping'}
+            {isLogin ? 'Sign in to your SnapShop account' : 'Join SnapShop today and start shopping'}
           </p>
         </div>
 
