@@ -1,8 +1,11 @@
 import axios from "axios";
 
+// Use environment variable for API URL, fallback to proxy in development
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+
 // Create API instance with base configuration
 const api = axios.create({
-  baseURL: "/api", // Use relative path for Vite proxy
+  baseURL: API_BASE_URL,
   timeout: 10000, // 10 second timeout
 });
 
