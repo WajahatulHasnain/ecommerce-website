@@ -47,10 +47,7 @@ export default function CustomerProducts() {
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponError, setCouponError] = useState('');
-  const [gridView, setGridView] = useState(() => {
-    // Default: 4 columns on desktop, 2 on mobile
-    return typeof window !== 'undefined' && window.innerWidth < 768 ? '2' : '4';
-  });
+  const [gridView, setGridView] = useState('2'); // Default to 4 products per row
 
   // Handle URL search parameters
   useEffect(() => {
