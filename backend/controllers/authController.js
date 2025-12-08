@@ -186,7 +186,7 @@ exports.login = async (req, res) => {
       console.log('❌ User not found:', email);
       return res.status(401).json({ 
         success: false,
-        msg: "Invalid email or password" 
+        msg: "Incorrect email address. No account found with this email." 
       });
     }
 
@@ -196,7 +196,7 @@ exports.login = async (req, res) => {
       console.log('❌ Invalid password for:', email);
       return res.status(401).json({ 
         success: false,
-        msg: "Invalid email or password" 
+        msg: "Incorrect password. Please try again." 
       });
     }
 

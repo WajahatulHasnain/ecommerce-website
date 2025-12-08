@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import api from "../utils/api";
@@ -43,7 +43,6 @@ export default function Login() {
       ...prev,
       [e.target.name]: e.target.value
     }));
-    setError("");
     
     // Clear specific field validation error when user types
     if (validationErrors[e.target.name]) {
@@ -56,7 +55,6 @@ export default function Login() {
 
   const handleSubmit = async e => {
     e.preventDefault();
-    setError("");
     
     if (!validateForm()) {
       return;
@@ -82,7 +80,9 @@ export default function Login() {
       }
     } catch (err) {
       console.error('❌ Login error:', err);
-      setError(err.response?.data?.msg || "Invalid email or password");
+      const errorMsg = err.response?.data?.msg || "Invalid email or password";
+      console.log('Setting error message:', errorMsg);
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -124,10 +124,32 @@ export default function Login() {
             )}
 
             {error && (
-              <div className="bg-gradient-to-r from-red-50 to-dusty-rose-light border border-dusty-rose/30 text-red-700 px-6 py-4 rounded-2xl text-sm font-medium">
-                <div className="flex items-center">
-                  <span className="text-lg mr-2">⚠️</span>
-                  {error}
+              <div className="fixed top-4 right-4 z-[9999] animate-slide-in-right">
+                <div className="bg-white border-l-4 border-red-500 shadow-2xl rounded-lg px-6 py-4 max-w-md min-w-[320px]">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <svg className="h-6 w-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="ml-3 flex-1">
+                      <h3 className="text-sm font-semibold text-gray-900">Login Failed</h3>
+                      <p className="mt-1 text-sm text-gray-700">{error}</p>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        console.log('Closing error message');
+                        setError("");
+                      }}
+                      className="ml-4 flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+                      type="button"
+                    >
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

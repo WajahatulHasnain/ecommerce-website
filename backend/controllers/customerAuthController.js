@@ -91,7 +91,7 @@ exports.loginCustomer = async (req, res) => {
       console.log('Customer not found:', email);
       return res.status(400).json({ 
         success: false,
-        msg: "Invalid customer credentials" 
+        msg: "Incorrect email address. No account found with this email." 
       });
     }
 
@@ -103,7 +103,7 @@ exports.loginCustomer = async (req, res) => {
       console.log('Invalid password for customer:', email);
       return res.status(400).json({ 
         success: false,
-        msg: "Invalid customer credentials" 
+        msg: "Incorrect password. Please try again." 
       });
     }
 

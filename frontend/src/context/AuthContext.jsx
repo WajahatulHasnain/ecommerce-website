@@ -45,33 +45,47 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+    const storedUser = localStorage.getItem('user');
+    
     if (token) {
-      // Decode token to get user info
-      try {
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        
-        const decoded = JSON.parse(jsonPayload);
-        setUser({ id: decoded.id, role: decoded.role });
-        
-        // ✅ Enhanced: Fetch complete profile after setting basic data
-        setTimeout(() => {
-          fetchUserProfile(token);
-        }, 100);
-      } catch (error) {
-        console.error('Error decoding token:', error);
-        localStorage.removeItem('token');
-        localStorage.removeItem('adminToken');
+      // First try to get user from localStorage
+      if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser);
+          setUser(userData);
+        } catch (error) {
+          console.error('Error parsing stored user:', error);
+        }
+      } else {
+        // Fallback: Decode token to get basic user info
+        try {
+          const base64Url = token.split('.')[1];
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+          }).join(''));
+          
+          const decoded = JSON.parse(jsonPayload);
+          setUser({ id: decoded.id, role: decoded.role });
+        } catch (error) {
+          console.error('Error decoding token:', error);
+          localStorage.removeItem('token');
+          localStorage.removeItem('adminToken');
+          localStorage.removeItem('user');
+        }
       }
+      
+      // ✅ Enhanced: Fetch complete profile after setting basic data
+      setTimeout(() => {
+        fetchUserProfile(token);
+      }, 100);
     }
     setLoading(false);
   }, [fetchUserProfile]);
 
   const login = (token, userData) => {
     localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(userData)); // Store user data
     setUser(userData);
     // ✅ Enhanced: Fetch complete profile after login
     setTimeout(() => {
@@ -81,6 +95,7 @@ export const AuthProvider = ({ children }) => {
 
   const adminLogin = (token, userData) => {
     localStorage.setItem('adminToken', token);
+    localStorage.setItem('user', JSON.stringify(userData)); // Store user data
     setUser(userData);
     // ✅ Enhanced: Fetch complete profile after admin login
     setTimeout(() => {
@@ -91,6 +106,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('adminToken');
+    localStorage.removeItem('user'); // Remove user data
     setUser(null);
   };
 

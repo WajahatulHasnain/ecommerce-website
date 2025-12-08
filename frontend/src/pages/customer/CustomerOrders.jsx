@@ -296,9 +296,21 @@ export default function CustomerOrders() {
                 <div>
                   <h3 className="text-base sm:text-lg font-semibold mb-3">Shipping Address</h3>
                   <div className="text-gray-600 text-sm sm:text-base">
-                    <p>{selectedOrder.shippingAddress?.name || 'N/A'}</p>
-                    <p>{selectedOrder.shippingAddress?.street || 'N/A'}</p>
-                    <p>{selectedOrder.shippingAddress?.city || 'N/A'}, {selectedOrder.shippingAddress?.state || 'N/A'} {selectedOrder.shippingAddress?.zipCode || 'N/A'}</p>
+                    {selectedOrder.customerInfo?.address ? (
+                      <>
+                        <p>{selectedOrder.customerInfo.address.street || 'N/A'}</p>
+                        <p>{selectedOrder.customerInfo.address.city || 'N/A'}{selectedOrder.customerInfo.address.state ? `, ${selectedOrder.customerInfo.address.state}` : ''} {selectedOrder.customerInfo.address.zipCode || ''}</p>
+                        {selectedOrder.customerInfo.address.country && <p>{selectedOrder.customerInfo.address.country}</p>}
+                      </>
+                    ) : selectedOrder.shippingAddress ? (
+                      <>
+                        <p>{selectedOrder.shippingAddress.street || 'N/A'}</p>
+                        <p>{selectedOrder.shippingAddress.city || 'N/A'}{selectedOrder.shippingAddress.state ? `, ${selectedOrder.shippingAddress.state}` : ''} {selectedOrder.shippingAddress.zipCode || ''}</p>
+                        {selectedOrder.shippingAddress.country && <p>{selectedOrder.shippingAddress.country}</p>}
+                      </>
+                    ) : (
+                      <p>N/A</p>
+                    )}
                   </div>
                 </div>
               </div>

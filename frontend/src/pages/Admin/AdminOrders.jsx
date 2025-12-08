@@ -347,19 +347,26 @@ export default function AdminOrders() {
                     <div><span className="font-medium">Name:</span> {selectedOrder.customerInfo?.name}</div>
                     <div><span className="font-medium">Email:</span> {selectedOrder.customerInfo?.email}</div>
                     <div><span className="font-medium">Phone:</span> {selectedOrder.customerInfo?.phone}</div>
-                    {selectedOrder.customerInfo?.address && (
-                      <div>
-                        <span className="font-medium">Address:</span>
-                        <div className="ml-2 text-gray-600">
-                          {selectedOrder.customerInfo.address.street}<br/>
-                          {selectedOrder.customerInfo.address.city}, {selectedOrder.customerInfo.address.state}<br/>
-                          {selectedOrder.customerInfo.address.zipCode}, {selectedOrder.customerInfo.address.country}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </Card>
 
+                <Card className="p-4">
+                  <h3 className="font-semibold text-gray-900 mb-3">Shipping Address</h3>
+                  <div className="text-sm text-gray-600">
+                    {selectedOrder.customerInfo?.address ? (
+                      <>
+                        <p>{selectedOrder.customerInfo.address.street || 'N/A'}</p>
+                        <p>{selectedOrder.customerInfo.address.city || 'N/A'}, {selectedOrder.customerInfo.address.state || 'N/A'} {selectedOrder.customerInfo.address.zipCode || ''}</p>
+                        {selectedOrder.customerInfo.address.country && <p>{selectedOrder.customerInfo.address.country}</p>}
+                      </>
+                    ) : (
+                      <p>N/A</p>
+                    )}
+                  </div>
+                </Card>
+              </div>
+
+              <div className="grid grid-cols-1 gap-6 mb-6">
                 <Card className="p-4">
                   <h3 className="font-semibold text-gray-900 mb-3">Order Summary</h3>
                   <div className="space-y-2 text-sm">

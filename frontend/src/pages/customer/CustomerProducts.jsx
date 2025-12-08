@@ -47,6 +47,10 @@ export default function CustomerProducts() {
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponError, setCouponError] = useState('');
+  const [gridView, setGridView] = useState(() => {
+    // Default: 4 columns on desktop, 2 on mobile
+    return typeof window !== 'undefined' && window.innerWidth < 768 ? '2' : '4';
+  });
 
   // Handle URL search parameters
   useEffect(() => {
@@ -354,7 +358,7 @@ export default function CustomerProducts() {
           type: appliedCoupon.type
         } : null,
         subtotal,
-        discount,
+        discount: appliedCoupon ? discount : 0,
         finalTotal,
         paymentMethod: customerInfo.paymentMethod || 'cod'
       }, {
@@ -363,6 +367,16 @@ export default function CustomerProducts() {
 
       if (response.data.success) {
         showToast('🎉 Order placed successfully! Thank you for your purchase.', 'success');
+        
+        // Clear cart from backend if user is authenticated
+        try {
+          await api.delete('/customer/cart', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        } catch (error) {
+          console.error('Failed to clear cart from backend:', error);
+        }
+        
         setCart([]);
         setAppliedCoupon(null);
         setCouponCode('');
@@ -492,6 +506,8 @@ export default function CustomerProducts() {
           searchTerm={searchTerm}
           onSearchChange={handleSearchChange}
           isLoading={loading}
+          gridView={gridView}
+          onGridViewChange={setGridView}
         />
 
         {/* Mini Cart Summary - Only for authenticated users */}
@@ -567,15 +583,19 @@ export default function CustomerProducts() {
           <>
             {products.length > 0 ? (
               <div className="w-full">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
+                <div className={`grid gap-6 ${
+                  gridView === '1' ? 'grid-cols-1 sm:grid-cols-2' :
+                  gridView === '2' ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4' :
+                  'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'
+                }`}>
                   {products.map(product => (
-                    <div key={product._id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 group">
-                      <div className="relative w-full h-80 bg-gray-100 overflow-hidden">
+                    <div key={product._id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 group flex flex-col">
+                      <div className="relative w-full aspect-square bg-white overflow-hidden flex-shrink-0">
                         {product.imageUrl ? (
                           <img
                             src={product.imageUrl}
                             alt={product.title}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-warm-gray-400 bg-warm-gray-100">
@@ -892,11 +912,30 @@ export default function CustomerProducts() {
                       required
                     />
                     <Input
-                      label="State"
+                      label="State (Optional)"
                       value={customerInfo.address.state}
                       onChange={(e) => setCustomerInfo(prev => ({
                         ...prev,
                         address: { ...prev.address, state: e.target.value }
+                      }))}
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      label="Zip Code (Optional)"
+                      value={customerInfo.address.zipCode}
+                      onChange={(e) => setCustomerInfo(prev => ({
+                        ...prev,
+                        address: { ...prev.address, zipCode: e.target.value }
+                      }))}
+                    />
+                    <Input
+                      label="Country (Optional)"
+                      value={customerInfo.address.country}
+                      onChange={(e) => setCustomerInfo(prev => ({
+                        ...prev,
+                        address: { ...prev.address, country: e.target.value }
                       }))}
                     />
                   </div>

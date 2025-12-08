@@ -7,10 +7,13 @@ export default function ProductFilters({
   onFiltersChange, 
   onSearchChange,
   searchTerm,
-  isLoading = false
+  isLoading = false,
+  gridView,
+  onGridViewChange
 }) {
   const [showFilterPanel, setShowFilterPanel] = useState(false);
-  const [priceRange, setPriceRange] = useState([0, 0]);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [priceRange, setPriceRange] = useState(filters?.priceRange || [0, 10000]);
   const [tempFilters, setTempFilters] = useState(filters);
   const filterPanelRef = useRef(null);
 
@@ -73,8 +76,119 @@ export default function ProductFilters({
   return (
     <div className="relative">
       {/* Compact Search Bar with Filter Button */}
-      <Card className="p-4 mb-6 bg-white border border-warm-gray-200 shadow-soft">
-        <div className="flex items-center gap-3">
+      <Card className="p-3 sm:p-4 mb-6 bg-white border border-warm-gray-200 shadow-soft">
+        {/* Mobile: Single Row with Search Button, View Toggle, and Filter */}
+        <div className="sm:hidden">
+          <div className="flex items-center gap-2 justify-between">
+            {/* Search Button (Mobile) */}
+            <button
+              onClick={() => setShowMobileSearch(!showMobileSearch)}
+              className={`p-2.5 rounded-xl border-2 transition-all duration-200 ${
+                showMobileSearch
+                  ? 'border-etsy-orange bg-etsy-orange text-white'
+                  : 'border-warm-gray-300 bg-white text-warm-gray-700'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </button>
+
+            {/* View Toggle Buttons (Mobile) */}
+            {onGridViewChange && (
+              <div className="flex gap-0.5 border border-gray-300 rounded-lg p-0.5 bg-white">
+                <button
+                  onClick={() => onGridViewChange('1')}
+                  className={`p-1.5 rounded transition-all duration-200 ${
+                    gridView === '1'
+                      ? 'bg-etsy-orange text-white shadow-sm'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                  title="Single column"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <rect x="6" y="4" width="12" height="16" rx="1" strokeWidth="2" />
+                  </svg>
+                </button>
+                
+                <button
+                  onClick={() => onGridViewChange('2')}
+                  className={`p-1.5 rounded transition-all duration-200 ${
+                    gridView === '2'
+                      ? 'bg-etsy-orange text-white shadow-sm'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                  title="Two columns"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <rect x="4" y="4" width="7" height="16" rx="1" strokeWidth="2" />
+                    <rect x="13" y="4" width="7" height="16" rx="1" strokeWidth="2" />
+                  </svg>
+                </button>
+                
+                <button
+                  onClick={() => onGridViewChange('4')}
+                  className={`p-1.5 rounded transition-all duration-200 ${
+                    gridView === '4'
+                      ? 'bg-etsy-orange text-white shadow-sm'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                  title="Four columns"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="7" height="7" rx="1" strokeWidth="2" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" strokeWidth="2" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" strokeWidth="2" />
+                    <rect x="14" y="14" width="7" height="7" rx="1" strokeWidth="2" />
+                  </svg>
+                </button>
+              </div>
+            )}
+            
+            {/* Filter Button (Mobile) */}
+            <button
+              onClick={toggleFilterPanel}
+              className={`relative p-2.5 rounded-xl border-2 transition-all duration-200 ${
+                showFilterPanel 
+                  ? 'border-etsy-orange bg-etsy-orange text-white shadow-lg' 
+                  : 'border-warm-gray-300 bg-white text-warm-gray-700'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z" />
+              </svg>
+              {activeFilterCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* Mobile Search Box (Expandable) */}
+          {showMobileSearch && (
+            <div className="mt-3 relative animate-slideDown">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-4 w-4 text-warm-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchTerm || ''}
+                onChange={(e) => {
+                  onSearchChange(e.target.value);
+                }}
+                autoFocus
+                className="w-full pl-9 pr-3 py-2.5 text-sm border border-warm-gray-300 rounded-xl focus:ring-2 focus:ring-etsy-orange focus:border-etsy-orange bg-white transition-all duration-200"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Desktop: Original Layout */}
+        <div className="hidden sm:flex items-center gap-3">
           {/* Search Input */}
           <div className="flex-1 relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -93,25 +207,82 @@ export default function ProductFilters({
             />
           </div>
           
-          {/* Filter Menu Button */}
-          <button
-            onClick={toggleFilterPanel}
-            className={`relative px-4 py-3 rounded-xl border-2 transition-all duration-200 flex items-center gap-2 font-medium ${
-              showFilterPanel 
-                ? 'border-etsy-orange bg-etsy-orange text-white shadow-lg' 
-                : 'border-warm-gray-300 bg-white text-warm-gray-700 hover:border-etsy-orange hover:shadow-md'
-            }`}
-          >
+          {/* Right Side Buttons Container */}
+          <div className="flex items-center gap-3">
+            {/* View Toggle Buttons */}
+            {onGridViewChange && (
+              <div className="flex gap-1 border border-gray-300 rounded-lg p-1 bg-white">
+                {/* Single Column View */}
+                <button
+                  onClick={() => onGridViewChange('1')}
+                  className={`p-2 rounded transition-all duration-200 ${
+                    gridView === '1'
+                      ? 'bg-etsy-orange text-white shadow-sm'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                  title="Single column"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <rect x="6" y="4" width="12" height="16" rx="1" strokeWidth="2" />
+                  </svg>
+                </button>
+                
+                {/* Two Column View */}
+                <button
+                  onClick={() => onGridViewChange('2')}
+                  className={`p-2 rounded transition-all duration-200 ${
+                    gridView === '2'
+                      ? 'bg-etsy-orange text-white shadow-sm'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                  title="Two columns"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <rect x="4" y="4" width="7" height="16" rx="1" strokeWidth="2" />
+                    <rect x="13" y="4" width="7" height="16" rx="1" strokeWidth="2" />
+                  </svg>
+                </button>
+                
+                {/* Four Column View */}
+                <button
+                  onClick={() => onGridViewChange('4')}
+                  className={`p-2 rounded transition-all duration-200 ${
+                    gridView === '4'
+                      ? 'bg-etsy-orange text-white shadow-sm'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                  title="Four columns"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="7" height="7" rx="1" strokeWidth="2" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" strokeWidth="2" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" strokeWidth="2" />
+                    <rect x="14" y="14" width="7" height="7" rx="1" strokeWidth="2" />
+                  </svg>
+                </button>
+              </div>
+            )}
+            
+            {/* Filter Menu Button */}
+            <button
+              onClick={toggleFilterPanel}
+              className={`relative px-4 py-3 rounded-xl border-2 transition-all duration-200 flex items-center gap-2 font-medium ${
+                showFilterPanel 
+                  ? 'border-etsy-orange bg-etsy-orange text-white shadow-lg' 
+                  : 'border-warm-gray-300 bg-white text-warm-gray-700 hover:border-etsy-orange hover:shadow-md'
+              }`}
+            >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z" />
             </svg>
-            <span className="hidden sm:inline">Filters</span>
+            <span>Filters</span>
             {activeFilterCount > 0 && (
               <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
                 {activeFilterCount}
               </span>
             )}
           </button>
+          </div>
         </div>
       </Card>
 

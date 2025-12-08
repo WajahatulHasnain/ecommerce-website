@@ -91,7 +91,7 @@ exports.loginAdmin = async (req, res) => {
       console.log('Admin not found:', email);
       return res.status(400).json({ 
         success: false,
-        msg: "Invalid admin credentials" 
+        msg: "Incorrect email address. No admin account found with this email." 
       });
     }
 
@@ -103,7 +103,7 @@ exports.loginAdmin = async (req, res) => {
       console.log('Invalid password for admin:', email);
       return res.status(400).json({ 
         success: false,
-        msg: "Invalid admin credentials" 
+        msg: "Incorrect password. Please try again." 
       });
     }
 

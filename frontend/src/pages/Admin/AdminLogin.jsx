@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../utils/api";
@@ -15,11 +15,12 @@ export default function AdminLogin() {
   const location = useLocation();
   const { adminLogin } = useAuth();
 
-  const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = e => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async e => {
     e.preventDefault();
-    setError("");
     setLoading(true);
     
     try {
@@ -35,7 +36,9 @@ export default function AdminLogin() {
       }
     } catch (err) {
       console.error('Admin login error:', err);
-      setError(err.response?.data?.msg || "Login failed");
+      const errorMsg = err.response?.data?.msg || "Login failed";
+      console.log('Setting admin error message:', errorMsg);
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -55,8 +58,33 @@ export default function AdminLogin() {
         <Card>
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
-                {error}
+              <div className="fixed top-4 right-4 z-[9999] animate-slide-in-right">
+                <div className="bg-white border-l-4 border-red-500 shadow-2xl rounded-lg px-6 py-4 max-w-md min-w-[320px]">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <svg className="h-6 w-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="ml-3 flex-1">
+                      <h3 className="text-sm font-semibold text-gray-900">Login Failed</h3>
+                      <p className="mt-1 text-sm text-gray-700">{error}</p>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        console.log('Closing admin error message');
+                        setError("");
+                      }}
+                      className="ml-4 flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+                      type="button"
+                    >
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 
