@@ -87,47 +87,15 @@ def evaluate_model(name, model, X_tr, y_tr, X_te, y_te, show_details=True):
 
 
 # ============================================================
-# Step 4: Baseline Random Forest (default params)
+# Steps 4–7: Baseline Random Forest (default params)
 # ============================================================
-print("\n\n>>> Step 4: Baseline Random Forest")
-rf_base = RandomForestClassifier(n_estimators=100, random_state=42)
-rf_base.fit(X_train, y_train)
-y_pred  = rf_base.predict(X_test)
-y_probs = rf_base.predict_proba(X_test)[:, 1]
-
-print("\n--- Model Evaluation Metrics ---")
-print(f"Accuracy : {accuracy_score(y_test, y_pred):.4f}")
-print(f"Precision: {precision_score(y_test, y_pred):.4f}")
-print(f"Recall   : {recall_score(y_test, y_pred):.4f}")
-print("\nClassification Report:")
-print(classification_report(y_test, y_pred))
-
-# Step 5: Confusion Matrix (baseline RF)
-# ---------------------------------------
-print("\n--- Confusion Matrix ---")
-cm = confusion_matrix(y_test, y_pred)
-plt.figure(figsize=(8, 6))
-sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
-            xticklabels=['No Disease', 'Disease'],
-            yticklabels=['No Disease', 'Disease'])
-plt.title('Confusion Matrix – Baseline Random Forest')
-plt.xlabel('Predicted'); plt.ylabel('Actual')
-plt.show()
-
-# Step 6 / Step 7: ROC Curve (baseline RF)
-# -----------------------------------------
-print("\n--- ROC Curve and AUC ---")
-fpr, tpr, thresholds = roc_curve(y_test, y_probs)
-roc_auc = auc(fpr, tpr)
-
-plt.figure(figsize=(8, 6))
-plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC Curve (AUC = {roc_auc:.2f})')
-plt.plot([0, 1], [0, 1], color='gray', lw=2, linestyle='--')
-plt.xlim([0.0, 1.0]); plt.ylim([0.0, 1.05])
-plt.xlabel('False Positive Rate'); plt.ylabel('True Positive Rate')
-plt.title('Receiver Operating Characteristic (ROC) Curve')
-plt.legend(loc="lower right"); plt.show()
-print(f"\nArea Under Curve (AUC): {roc_auc:.4f}")
+print("\n\n>>> Steps 4–7: Baseline Random Forest (default params)")
+res_rf_base = evaluate_model(
+    "Baseline Random Forest",
+    RandomForestClassifier(n_estimators=100, random_state=42),
+    X_train, y_train, X_test, y_test
+)
+print(f"\nArea Under Curve (AUC): {res_rf_base['auc']:.4f}")
 
 
 # ============================================================
